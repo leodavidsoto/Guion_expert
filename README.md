@@ -81,7 +81,7 @@ Sistema automatizado que genera guiones profesionales usando 8 expertos especial
 ### Instalación Automática
 ```bash
 # 1. Clonar repositorio
-git clone https://github.com/TU_USUARIO/guion-experts-suite-v2.git
+git clone https://github.com/leodavidsoto/guion-experts-suite-v2.git
 cd guion-experts-suite-v2
 
 # 2. Instalar Ollama (si no lo tienes)
@@ -409,15 +409,15 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 
 ## 📞 Contacto
 
-- **Issues**: [GitHub Issues](https://github.com/TU_USUARIO/guion-experts-suite-v2/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/TU_USUARIO/guion-experts-suite-v2/discussions)
-- **Email**: tu-email@example.com
+- **Issues**: [GitHub Issues](https://github.com/leodavidsoto/guion-experts-suite-v2/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/leodavidsoto/guion-experts-suite-v2/discussions)
+- **Email**: leodavidsoto@gmail.com
 
 ---
 
 ## 🌟 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=TU_USUARIO/guion-experts-suite-v2&type=Date)](https://star-history.com/#TU_USUARIO/guion-experts-suite-v2&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=leodavidsoto/guion-experts-suite-v2&type=Date)](https://star-history.com/#leodavidsoto/guion-experts-suite-v2&Date)
 
 ---
 
