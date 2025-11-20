@@ -1,423 +1,523 @@
-// WebSocket Connection
-const socket = io({
-    transports: ['websocket', 'polling'],
-    pingTimeout: 120000,
-    pingInterval: 25000
+// Configuración
+const socket = io();
+let currentView = 'generate';
+let currentStructure = null;
+let currentExpert = null;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// NAVEGACIÓN
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+document.addEventListener('DOMContentLoaded', () => {
+    initNavigation();
+    initAutoDetect();
+    initGenerateButton();
+    initSocketListeners();
+    loadStructures();
+    loadExperts();
+    loadProjects();
 });
 
-let selectedExpert = null;
-let selectedStructure = null;
-let currentWorkspaceContent = null;
-
-// Elements
-const views = document.querySelectorAll('.view');
-const navIcons = document.querySelectorAll('.nav-icon');
-const headerTitle = document.getElementById('headerTitle');
-const headerSubtitle = document.getElementById('headerSubtitle');
-const statusBadge = document.getElementById('statusBadge');
-const logConsole = document.getElementById('logConsole');
-const workspaceLog = document.getElementById('workspaceLog');
-const autoDetect = document.getElementById('autoDetect');
-const manualControls = document.getElementById('manualControls');
-const estructuraSelect = document.getElementById('estructuraSelect');
-const estructuraInfo = document.getElementById('estructuraInfo');
-
-// Toggle manual controls
-autoDetect.addEventListener('change', () => {
-    manualControls.classList.toggle('hidden', autoDetect.checked);
-});
-
-// Show estructura info
-estructuraSelect.addEventListener('change', () => {
-    const value = estructuraSelect.value;
-    if (!value) {
-        estructuraInfo.classList.add('hidden');
-        return;
-    }
-    
-    const selectedOption = estructuraSelect.options[estructuraSelect.selectedIndex];
-    document.getElementById('estructuraInfoTitle').textContent = selectedOption.text;
-    document.getElementById('estructuraInfoDesc').textContent = 'Estructura narrativa seleccionada';
-    estructuraInfo.classList.remove('hidden');
-});
-
-// Navigation
-navIcons.forEach(icon => {
-    icon.addEventListener('click', () => {
-        const viewName = icon.dataset.view;
-        switchView(viewName);
+function initNavigation() {
+    document.querySelectorAll('.nav-icon').forEach(icon => {
+        icon.addEventListener('click', () => {
+            const view = icon.dataset.view;
+            switchView(view);
+        });
     });
-});
-
-function switchView(viewName) {
-    navIcons.forEach(i => i.classList.remove('active'));
-    views.forEach(v => v.classList.remove('active'));
-    
-    const targetNav = document.querySelector(`[data-view="${viewName}"]`);
-    const targetView = document.getElementById(viewName + 'View');
-    
-    if (targetNav) targetNav.classList.add('active');
-    if (targetView) targetView.classList.add('active');
-    
-    const titles = {
-        'generate': ['🎬 Generar Guion', '53 Estructuras • 70+ Formatos • 8 Expertos • Director Flow'],
-        'structures': ['📖 Estructuras Narrativas', '53 estructuras de todo el mundo'],
-        'experts': ['🎯 Expertos Individuales', '8 expertos especializados'],
-        'analyze': ['📄 Analizar PDF', 'Sube y analiza guiones'],
-        'projects': ['📁 Proyectos', 'Historial de generaciones']
-    };
-    
-    if (titles[viewName]) {
-        headerTitle.textContent = titles[viewName][0];
-        headerSubtitle.textContent = titles[viewName][1];
-    }
-    
-    if (viewName === 'experts') loadExperts();
-    if (viewName === 'structures') loadStructures();
-    if (viewName === 'projects') loadProjects();
 }
 
-// Socket events
-socket.on('connected', (data) => {
-    statusBadge.textContent = '● Conectado';
-    statusBadge.style.background = 'var(--success)';
-    addLog('✅ Sistema conectado', 'success');
-});
+function switchView(view) {
+    // Actualizar iconos de navegación
+    document.querySelectorAll('.nav-icon').forEach(icon => {
+        icon.classList.remove('active');
+    });
+    document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
+    
+    // Actualizar vistas
+    document.querySelectorAll('.view').forEach(v => {
+        v.classList.remove('active');
+    });
+    
+    const viewElement = document.getElementById(`${view}View`);
+    if (viewElement) {
+        viewElement.classList.add('active');
+        currentView = view;
+    }
+    
+    // Actualizar header
+    const titles = {
+        'generate': '🎬 Guion Experts Suite V2',
+        'structures': '📖 Estructuras Narrativas',
+        'experts': '🎯 Expertos Individuales',
+        'analyze': '📄 Analizar PDF',
+        'projects': '📁 Proyectos'
+    };
+    
+    document.getElementById('headerTitle').textContent = titles[view] || titles['generate'];
+}
 
-socket.on('disconnect', () => {
-    statusBadge.textContent = '● Desconectado';
-    statusBadge.style.background = 'var(--error)';
-});
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AUTO-DETECCIÓN
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function initAutoDetect() {
+    const autoDetect = document.getElementById('autoDetect');
+    const manualControls = document.getElementById('manualControls');
+    
+    autoDetect.addEventListener('change', () => {
+        if (autoDetect.checked) {
+            manualControls.classList.add('hidden');
+        } else {
+            manualControls.classList.remove('hidden');
+        }
+    });
+}
 
-socket.on('log', (data) => {
-    addLog(data.message, data.type);
-    addWorkspaceLog(data.message, data.type);
-});
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// GENERAR PROYECTO COMPLETO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function initGenerateButton() {
+    document.getElementById('generateBtn').addEventListener('click', generateProject);
+}
 
-socket.on('expert_update', (data) => {
-    document.getElementById('expertResult').textContent = data.content;
-    document.getElementById('expertResult').classList.remove('empty');
-});
-
-socket.on('expert_completed', (data) => {
-    document.getElementById('runExpertBtn').disabled = false;
-    addLog('✅ Experto completado', 'success');
-});
-
-socket.on('structure_result', (data) => {
-    currentWorkspaceContent = data.content;
-    document.getElementById('workspaceResult').textContent = data.content;
-    document.getElementById('workspaceResult').classList.remove('empty');
-    document.getElementById('workspaceGenerateBtn').disabled = false;
-    document.getElementById('workspaceGenerateBtn').textContent = '▶️ Generar con esta Estructura';
-});
-
-socket.on('flow_completed', (data) => {
-    document.getElementById('workspaceFlowResult').textContent = data.tabla;
-    document.getElementById('workspaceFlowResult').classList.remove('empty');
-    document.getElementById('workspaceFlowBtn').disabled = false;
-    document.getElementById('workspaceFlowBtn').textContent = '🎥 Generar Tabla Flow';
-    addWorkspaceLog('✅ Tabla Flow generada', 'success');
-});
-
-// Keep alive
-setInterval(() => {
-    socket.emit('ping');
-}, 20000);
-
-// Generate
-document.getElementById('generateBtn')?.addEventListener('click', async () => {
+async function generateProject() {
     const idea = document.getElementById('ideaInput').value.trim();
+    
     if (!idea) {
-        alert('Ingresa una idea');
+        alert('Por favor ingresa una idea');
         return;
     }
     
-    const auto = autoDetect.checked;
-    const formato = auto ? null : document.getElementById('formatoSelect').value;
-    const estructura = auto ? null : estructuraSelect.value;
+    const autoDetect = document.getElementById('autoDetect').checked;
+    const formato = document.getElementById('formatoSelect').value;
+    const estructura = document.getElementById('estructuraSelect').value;
     
-    document.getElementById('generateBtn').disabled = true;
-    document.getElementById('generateBtn').textContent = '⏳ Generando...';
-    logConsole.innerHTML = '';
+    // Limpiar consola
+    document.getElementById('logConsole').innerHTML = '';
     
-    await fetch('/api/generate', {
+    // Enviar petición
+    const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ 
-            idea, 
-            formato,
-            estructura,
-            auto_detect: auto 
+        body: JSON.stringify({
+            idea: idea,
+            auto_detect: autoDetect,
+            formato: formato || null,
+            estructura: estructura || null
         })
     });
-});
+    
+    const data = await response.json();
+    
+    if (data.status === 'started') {
+        addLog('info', '🚀 Generación iniciada...');
+    }
+}
 
-// Load structures
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ESTRUCTURAS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function loadStructures() {
     try {
         const response = await fetch('/api/structures/all');
-        const allStructures = await response.json();
+        const data = await response.json();
+        
         const grid = document.getElementById('structuresGrid');
+        grid.innerHTML = '';
         
-        let html = '';
-        
-        const categoryNames = {
-            'classic_hollywood': '🎬 Hollywood Clásico',
-            'mythic_journey': '🗿 Viaje Mítico',
-            'episodic_tv': '📺 TV y Series',
-            'non_linear': '🔀 No Lineal',
-            'international': '🌏 Internacional',
-            'experimental': '🧪 Experimental',
-            'short_form': '⚡ Formato Corto',
-            'documentary': '🎥 Documental',
-            'theatre_performance': '🎭 Teatro'
-        };
-        
-        for (let category in allStructures) {
-            html += `<div class="category-header"><h3>${categoryNames[category] || category}</h3></div>`;
+        // Iterar por categorías
+        for (const [category, structures] of Object.entries(data)) {
+            // Header de categoría
+            const header = document.createElement('div');
+            header.className = 'category-header';
+            header.innerHTML = `<h3>${getCategoryIcon(category)} ${getCategoryName(category)}</h3>`;
+            grid.appendChild(header);
             
-            for (let id in allStructures[category]) {
-                const s = allStructures[category][id];
-                html += `
-                    <div class="card" onclick="openStructureWorkspace('${id}', \`${s.name}\`, \`${s.description}\`, '${s.beats}', '${s.duration}', '${s.best_for}', '${s.author || ''}')">
-                        <div class="card-icon">📖</div>
-                        <div class="card-title">${s.name}</div>
-                        <div class="card-description">${s.description}</div>
-                        <div class="card-meta">
-                            <span class="badge">${s.beats} beats</span>
-                            <span class="badge">${s.duration}</span>
-                            <span class="badge">${s.best_for}</span>
-                        </div>
-                    </div>
-                `;
+            // Estructuras de esta categoría
+            for (const [key, structure] of Object.entries(structures)) {
+                const card = createStructureCard(key, structure, category);
+                grid.appendChild(card);
             }
         }
-        
-        grid.innerHTML = html;
     } catch (error) {
-        document.getElementById('structuresGrid').innerHTML = '<p style="color: red;">Error cargando estructuras</p>';
+        console.error('Error cargando estructuras:', error);
     }
 }
 
-function openStructureWorkspace(id, name, description, beats, duration, bestFor, author) {
-    selectedStructure = id;
+function createStructureCard(key, structure, category) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cursor = 'pointer';
     
-    document.getElementById('workspaceStructureName').textContent = name;
-    document.getElementById('workspaceStructureDesc').textContent = description;
-    
-    document.getElementById('workspaceMetaInfo').innerHTML = `
-        <p><strong>📊 Beats:</strong> ${beats}</p>
-        <p><strong>⏱️ Duración:</strong> ${duration}</p>
-        <p><strong>🎯 Mejor para:</strong> ${bestFor}</p>
-        ${author ? `<p><strong>✍️ Autor:</strong> ${author}</p>` : ''}
+    card.innerHTML = `
+        <div class="card-icon">${getCategoryIcon(category)}</div>
+        <div class="card-title">${structure.name}</div>
+        <div class="card-description">${structure.description || ''}</div>
+        <div class="card-meta">
+            <span class="badge">${structure.beats || '?'} beats</span>
+            <span class="badge">${structure.duration || 'Variable'}</span>
+            ${structure.best_for ? `<span class="badge">${structure.best_for}</span>` : ''}
+        </div>
     `;
     
-    document.getElementById('workspaceInput').value = '';
-    document.getElementById('workspaceResult').textContent = 'Esperando generación...';
-    document.getElementById('workspaceResult').classList.add('empty');
-    document.getElementById('workspaceFlowResult').textContent = 'Presiona el botón para generar tabla de rodaje';
-    document.getElementById('workspaceFlowResult').classList.add('empty');
+    card.addEventListener('click', () => openStructureWorkspace(key, structure));
     
-    workspaceLog.innerHTML = '<div class="log-line log-info">Listo para generar</div>';
-    
-    switchView('structureWorkspace');
+    return card;
 }
 
-document.getElementById('workspaceGenerateBtn')?.addEventListener('click', async () => {
+function openStructureWorkspace(structureId, structure) {
+    currentStructure = { id: structureId, ...structure };
+    
+    // Cambiar a vista de workspace
+    switchView('structureWorkspace');
+    
+    // Actualizar título
+    document.getElementById('workspaceStructureName').textContent = structure.name;
+    
+    // Limpiar input y resultado
+    document.getElementById('workspaceInput').value = '';
+    document.getElementById('workspaceResult').innerHTML = '<p class="empty">Ingresa tu idea y genera la estructura...</p>';
+    document.getElementById('workspaceResult').classList.add('empty');
+    document.getElementById('workspaceFlowResult').innerHTML = '<p class="empty">Primero genera la estructura</p>';
+    document.getElementById('workspaceFlowResult').classList.add('empty');
+    
+    // Mostrar metadata
+    const metaInfo = document.getElementById('workspaceMetaInfo');
+    metaInfo.innerHTML = `
+        <h4>${structure.name}</h4>
+        <p><strong>Autor:</strong> ${structure.author || 'Clásico'}</p>
+        <p><strong>Beats:</strong> ${structure.beats || '?'}</p>
+        <p><strong>Duración:</strong> ${structure.duration || 'Variable'}</p>
+        <p><strong>Mejor para:</strong> ${structure.best_for || 'General'}</p>
+        <p style="color: #666; margin-top: 10px;">${structure.description || ''}</p>
+    `;
+    
+    // Limpiar logs
+    document.getElementById('workspaceLog').innerHTML = '';
+    
+    // Setup botón de generar
+    document.getElementById('workspaceGenerateBtn').onclick = () => generateWithStructure();
+    document.getElementById('workspaceFlowBtn').onclick = () => generateFlowTable();
+}
+
+async function generateWithStructure() {
     const input = document.getElementById('workspaceInput').value.trim();
+    
     if (!input) {
-        alert('Ingresa tu idea');
+        alert('Por favor ingresa una idea');
         return;
     }
     
-    if (!selectedStructure) {
-        alert('Error: No hay estructura seleccionada');
-        return;
-    }
+    addWorkspaceLog('info', `🏗️ Generando con ${currentStructure.name}...`);
     
-    document.getElementById('workspaceGenerateBtn').disabled = true;
-    document.getElementById('workspaceGenerateBtn').textContent = '⏳ Generando...';
-    document.getElementById('workspaceResult').textContent = 'Generando...';
-    document.getElementById('workspaceResult').classList.remove('empty');
-    workspaceLog.innerHTML = '';
+    // Limpiar resultado
+    const resultDiv = document.getElementById('workspaceResult');
+    resultDiv.innerHTML = '<p style="color: #999;">Generando...</p>';
+    resultDiv.classList.add('empty');
     
     try {
         const response = await fetch('/api/structure/generate', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                structure_id: selectedStructure,
+                structure_id: currentStructure.id,
                 input: input
             })
         });
         
-        if (response.ok) {
-            addWorkspaceLog(`Generando con ${selectedStructure}...`, 'info');
-        } else {
-            throw new Error('Error al iniciar');
+        const data = await response.json();
+        
+        if (data.status === 'started') {
+            addWorkspaceLog('success', '✅ Generación iniciada');
         }
     } catch (error) {
-        addWorkspaceLog(`Error: ${error.message}`, 'error');
-        document.getElementById('workspaceGenerateBtn').disabled = false;
-        document.getElementById('workspaceGenerateBtn').textContent = '▶️ Generar con esta Estructura';
+        addWorkspaceLog('error', `❌ Error: ${error.message}`);
     }
-});
+}
 
-document.getElementById('workspaceFlowBtn')?.addEventListener('click', async () => {
-    if (!currentWorkspaceContent) {
-        alert('Genera primero la estructura');
+async function generateFlowTable() {
+    const sceneContent = document.getElementById('workspaceResult').textContent;
+    
+    if (!sceneContent || sceneContent.includes('Esperando')) {
+        alert('Primero genera la estructura');
         return;
     }
     
-    document.getElementById('workspaceFlowBtn').disabled = true;
-    document.getElementById('workspaceFlowBtn').textContent = '⏳ Generando...';
-    document.getElementById('workspaceFlowResult').textContent = 'Generando tabla de rodaje...';
-    document.getElementById('workspaceFlowResult').classList.remove('empty');
+    addWorkspaceLog('info', '🎬 Generando tabla Director Flow...');
     
-    await fetch('/api/flow/generate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            scene_content: currentWorkspaceContent
-        })
-    });
-});
-
-// Tab switching
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const tabName = btn.dataset.tab;
-        
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
-        btn.classList.add('active');
-        document.getElementById(tabName + 'TabContent').classList.add('active');
-    });
-});
-
-// Load experts
-async function loadExperts() {
-    const response = await fetch('/api/experts');
-    const experts = await response.json();
-    const grid = document.getElementById('expertsGrid');
+    const flowResultDiv = document.getElementById('workspaceFlowResult');
+    flowResultDiv.innerHTML = '<p style="color: #999;">Generando tabla...</p>';
+    flowResultDiv.classList.add('empty');
     
-    grid.innerHTML = Object.entries(experts).map(([id, expert]) => `
-        <div class="card" onclick="selectExpert('${id}', '${expert.name}')">
-            <div class="card-icon">${expert.icon}</div>
-            <div class="card-title">${expert.name}</div>
-            <div class="card-description">${expert.description}</div>
-        </div>
-    `).join('');
-}
-
-function selectExpert(id, name) {
-    selectedExpert = id;
-    document.getElementById('expertWorkspace').classList.remove('hidden');
-    document.getElementById('expertTitle').textContent = name;
-    document.getElementById('expertResult').textContent = 'Esperando ejecución...';
-    document.getElementById('expertResult').classList.add('empty');
-}
-
-document.getElementById('runExpertBtn')?.addEventListener('click', async () => {
-    if (!selectedExpert) return;
-    
-    const input = document.getElementById('expertInput').value;
-    if (!input.trim()) {
-        alert('Ingresa un input');
-        return;
-    }
-    
-    document.getElementById('runExpertBtn').disabled = true;
-    document.getElementById('expertResult').textContent = 'Procesando...';
-    document.getElementById('expertResult').classList.remove('empty');
-    
-    await fetch('/api/expert/run', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ expert: selectedExpert, input })
-    });
-});
-
-// Load projects
-async function loadProjects() {
-    const response = await fetch('/api/projects');
-    const projects = await response.json();
-    const grid = document.getElementById('projectsGrid');
-    
-    if (projects.length === 0) {
-        grid.innerHTML = '<p style="color: #999;">No hay proyectos aún</p>';
-        return;
-    }
-    
-    grid.innerHTML = projects.map(p => `
-        <div class="card" style="background: white; color: var(--dark); border: 2px solid #e0e0e0;">
-            <div class="card-title">${p.id}</div>
-            <div class="card-meta" style="color: #666;">
-                ${p.formato} • ${p.estructura}<br>
-                ${new Date(p.created * 1000).toLocaleString('es-CL')}
-            </div>
-        </div>
-    `).join('');
-}
-
-// File upload
-const uploadZone = document.getElementById('uploadZone');
-const fileInput = document.getElementById('fileInput');
-
-uploadZone?.addEventListener('click', () => fileInput.click());
-
-fileInput?.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        addLog(`📤 Subiendo: ${file.name}`, 'info');
-        
-        const response = await fetch('/api/upload', {
+    try {
+        const response = await fetch('/api/flow/generate', {
             method: 'POST',
-            body: formData
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                scene_content: sceneContent
+            })
         });
         
         const data = await response.json();
         
-        if (data.success) {
-            addLog('✅ Archivo subido', 'success');
-            document.getElementById('analysisArea').classList.remove('hidden');
-            
-            await fetch('/api/analyze', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ filepath: data.filepath, analysis_type: 'full' })
-            });
+        if (data.status === 'started') {
+            addWorkspaceLog('success', '✅ Generación Flow iniciada');
         }
+    } catch (error) {
+        addWorkspaceLog('error', `❌ Error: ${error.message}`);
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// EXPERTOS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadExperts() {
+    try {
+        const response = await fetch('/api/experts');
+        const experts = await response.json();
+        
+        const grid = document.getElementById('expertsGrid');
+        grid.innerHTML = '';
+        
+        for (const [key, expert] of Object.entries(experts)) {
+            const card = createExpertCard(key, expert);
+            grid.appendChild(card);
+        }
+    } catch (error) {
+        console.error('Error cargando expertos:', error);
+    }
+}
+
+function createExpertCard(key, expert) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cursor = 'pointer';
+    
+    card.innerHTML = `
+        <div class="card-icon">${expert.icon}</div>
+        <div class="card-title">${expert.name}</div>
+        <div class="card-description">${expert.description}</div>
+    `;
+    
+    card.addEventListener('click', () => openExpertWorkspace(key, expert));
+    
+    return card;
+}
+
+function openExpertWorkspace(expertId, expert) {
+    currentExpert = { id: expertId, ...expert };
+    
+    // Mostrar workspace
+    document.getElementById('expertWorkspace').classList.remove('hidden');
+    document.getElementById('expertTitle').textContent = `${expert.icon} ${expert.name}`;
+    
+    // Limpiar
+    document.getElementById('expertInput').value = '';
+    document.getElementById('expertResult').innerHTML = '<p class="empty">Esperando input...</p>';
+    document.getElementById('expertResult').classList.add('empty');
+    
+    // Scroll al workspace
+    document.getElementById('expertWorkspace').scrollIntoView({ behavior: 'smooth' });
+}
+
+document.getElementById('runExpertBtn')?.addEventListener('click', async () => {
+    const input = document.getElementById('expertInput').value.trim();
+    
+    if (!input) {
+        alert('Por favor ingresa un input');
+        return;
+    }
+    
+    const resultDiv = document.getElementById('expertResult');
+    resultDiv.innerHTML = '<p style="color: #999;">Procesando...</p>';
+    resultDiv.classList.add('empty');
+    
+    try {
+        const response = await fetch('/api/expert/run', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                expert: currentExpert.id,
+                input: input
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'started') {
+            addLog('success', `✅ Ejecutando ${currentExpert.name}`);
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<p style="color: var(--error);">Error: ${error.message}</p>`;
     }
 });
 
-socket.on('analysis_update', (data) => {
-    document.getElementById('analysisResult').textContent = data.content;
-    document.getElementById('analysisResult').classList.remove('empty');
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PROYECTOS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        const projects = await response.json();
+        
+        const grid = document.getElementById('projectsGrid');
+        grid.innerHTML = '';
+        
+        if (projects.length === 0) {
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No hay proyectos aún</p>';
+            return;
+        }
+        
+        projects.forEach(project => {
+            const card = createProjectCard(project);
+            grid.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error cargando proyectos:', error);
+    }
+}
+
+function createProjectCard(project) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    
+    const date = new Date(project.created * 1000);
+    
+    card.innerHTML = `
+        <div class="card-icon">📂</div>
+        <div class="card-title">${project.id}</div>
+        <div class="card-meta">
+            <span class="badge">📺 ${project.formato}</span>
+            <span class="badge">📖 ${project.estructura}</span>
+            <span class="badge">📅 ${date.toLocaleDateString()}</span>
+        </div>
+    `;
+    
+    return card;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TABS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        
+        // Actualizar botones
+        btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Actualizar contenido
+        btn.closest('.form-section').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${tab}TabContent`).classList.add('active');
+    });
 });
 
-function addLog(message, type = 'output') {
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// WEBSOCKETS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function initSocketListeners() {
+    socket.on('connect', () => {
+        console.log('Conectado al servidor');
+        document.getElementById('statusBadge').textContent = '● Conectado';
+        document.getElementById('statusBadge').style.background = 'var(--success)';
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('Desconectado');
+        document.getElementById('statusBadge').textContent = '● Desconectado';
+        document.getElementById('statusBadge').style.background = 'var(--error)';
+    });
+    
+    socket.on('log', (data) => {
+        addLog(data.type, data.message);
+    });
+    
+    socket.on('structure_result', (data) => {
+        const resultDiv = document.getElementById('workspaceResult');
+        resultDiv.textContent = data.content;
+        resultDiv.classList.remove('empty');
+        addWorkspaceLog('success', '✅ Estructura generada');
+    });
+    
+    socket.on('flow_completed', (data) => {
+        const flowDiv = document.getElementById('workspaceFlowResult');
+        flowDiv.textContent = data.tabla;
+        flowDiv.classList.remove('empty');
+        addWorkspaceLog('success', '✅ Tabla Flow completada');
+    });
+    
+    socket.on('expert_update', (data) => {
+        const resultDiv = document.getElementById('expertResult');
+        resultDiv.textContent = data.content;
+        resultDiv.classList.remove('empty');
+    });
+    
+    socket.on('expert_completed', (data) => {
+        addLog('success', `✅ ${currentExpert?.name || 'Experto'} completado`);
+    });
+    
+    socket.on('generation_completed', (data) => {
+        if (data.returncode === 0) {
+            addLog('success', '✅ Generación completada exitosamente');
+            loadProjects(); // Recargar lista de proyectos
+        } else {
+            addLog('error', '❌ Error en la generación');
+        }
+    });
+}
+
+function addLog(type, message) {
+    const console = document.getElementById('logConsole');
     const line = document.createElement('div');
     line.className = `log-line log-${type}`;
     line.textContent = message;
-    logConsole.appendChild(line);
-    logConsole.scrollTop = logConsole.scrollHeight;
+    console.appendChild(line);
+    console.scrollTop = console.scrollHeight;
 }
 
-function addWorkspaceLog(message, type = 'output') {
+function addWorkspaceLog(type, message) {
+    const console = document.getElementById('workspaceLog');
     const line = document.createElement('div');
     line.className = `log-line log-${type}`;
     line.textContent = message;
-    workspaceLog.appendChild(line);
-    workspaceLog.scrollTop = workspaceLog.scrollHeight;
+    console.appendChild(line);
+    console.scrollTop = console.scrollHeight;
 }
 
-// Init
-loadStructures();
-loadExperts();
-loadProjects();
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// UTILIDADES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getCategoryIcon(category) {
+    const icons = {
+        'hollywood': '🎬',
+        'mythic': '🗿',
+        'tv': '📺',
+        'nonlinear': '🔀',
+        'international': '🌏',
+        'experimental': '🧪',
+        'short': '⚡',
+        'documentary': '🎥',
+        'theater': '🎭'
+    };
+    return icons[category] || '📖';
+}
+
+function getCategoryName(category) {
+    const names = {
+        'hollywood': 'Hollywood Clásico',
+        'mythic': 'Viaje Mítico',
+        'tv': 'TV y Series',
+        'nonlinear': 'No Lineal',
+        'international': 'Internacional',
+        'experimental': 'Experimental',
+        'short': 'Formato Corto',
+        'documentary': 'Documental',
+        'theater': 'Teatro'
+    };
+    return names[category] || category;
+}
+
+// Heartbeat
+setInterval(() => {
+    socket.emit('ping');
+}, 25000);
