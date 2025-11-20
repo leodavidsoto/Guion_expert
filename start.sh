@@ -1,146 +1,317 @@
 #!/bin/bash
 
+clear
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🎬 GUION EXPERTS SUITE V2 - INICIO COMPLETO"
+echo "🎬 GUION EXPERTS SUITE V2"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Colores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# 1. Verificar Ollama
-echo -e "${BLUE}1. Verificando Ollama...${NC}"
-if pgrep -x "ollama" > /dev/null; then
-    echo -e "${GREEN}   ✓ Ollama está corriendo${NC}"
-else
-    echo -e "${YELLOW}   ⚠ Iniciando Ollama...${NC}"
-    ollama serve > /dev/null 2>&1 &
-    sleep 3
-    if pgrep -x "ollama" > /dev/null; then
-        echo -e "${GREEN}   ✓ Ollama iniciado${NC}"
-    else
-        echo -e "${RED}   ✗ Error: No se pudo iniciar Ollama${NC}"
-        exit 1
-    fi
+# Verificar directorio
+if [ ! -f "ejecutar.sh" ]; then
+    echo "❌ Error: No estás en el directorio correcto"
+    echo "   Ejecuta: cd ~/guion_experts_suite_v2 && ./start.sh"
+    exit 1
 fi
 
-# 2. Verificar modelos necesarios
-echo -e "${BLUE}2. Verificando modelos...${NC}"
+echo "📂 Directorio: $(pwd)"
+echo ""
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 1. VERIFICAR OLLAMA
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔍 PASO 1/6: Verificando Ollama"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if ! command -v ollama &> /dev/null; then
+    echo "❌ Ollama no está instalado"
+    echo ""
+    echo "Instálalo desde: https://ollama.ai"
+    echo "O ejecuta: curl -fsSL https://ollama.ai/install.sh | sh"
+    exit 1
+fi
+
+if ! pgrep -x "ollama" > /dev/null; then
+    echo "⚠️  Ollama no está corriendo. Iniciando..."
+    ollama serve > /tmp/ollama_$(date +%s).log 2>&1 &
+    sleep 5
+    
+    if pgrep -x "ollama" > /dev/null; then
+        echo "✅ Ollama iniciado"
+    else
+        echo "❌ No se pudo iniciar Ollama"
+        echo "   Intenta manualmente: ollama serve"
+        exit 1
+    fi
+else
+    echo "✅ Ollama está corriendo"
+fi
+
+echo ""
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 2. VERIFICAR MODELOS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📦 PASO 2/6: Verificando modelos"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
 REQUIRED_MODELS=("llama3.2:3b" "qwen2.5:7b" "qwen2.5:14b")
 MISSING_MODELS=()
+ALL_MODELS_OK=true
 
 for model in "${REQUIRED_MODELS[@]}"; do
-    if ollama list | grep -q "$model"; then
-        echo -e "${GREEN}   ✓ $model${NC}"
+    if ollama list | grep -q "^${model}"; then
+        echo "  ✓ $model"
     else
-        echo -e "${YELLOW}   ⚠ Falta: $model${NC}"
+        echo "  ✗ $model (falta)"
         MISSING_MODELS+=("$model")
+        ALL_MODELS_OK=false
     fi
 done
 
-if [ ${#MISSING_MODELS[@]} -gt 0 ]; then
+if [ "$ALL_MODELS_OK" = false ]; then
     echo ""
-    echo -e "${YELLOW}   Modelos faltantes. ¿Descargar ahora? (y/n)${NC}"
-    read -t 10 answer || answer="n"
+    echo "⚠️  Faltan ${#MISSING_MODELS[@]} modelo(s)"
+    echo ""
+    echo "¿Descargar ahora? (y/n) [timeout 15s]"
+    read -t 15 answer || answer="n"
     
     if [ "$answer" = "y" ]; then
         for model in "${MISSING_MODELS[@]}"; do
-            echo -e "${BLUE}   Descargando $model...${NC}"
+            echo ""
+            echo "📥 Descargando $model..."
             ollama pull "$model"
         done
     else
-        echo -e "${YELLOW}   Continuando sin descargar modelos...${NC}"
+        echo "⚠️  Continuando sin todos los modelos"
+        echo "   El sistema puede fallar en algunos expertos"
     fi
 fi
 
-# 3. Verificar estructura de directorios
-echo -e "${BLUE}3. Verificando estructura...${NC}"
-REQUIRED_DIRS=(
-    "output"
-    "config"
-    "prompts"
-    "scripts"
-    "webapp"
-    "webapp/templates"
-    "webapp/static"
-    "tools"
-)
+echo ""
 
-for dir in "${REQUIRED_DIRS[@]}"; do
-    if [ -d "$dir" ]; then
-        echo -e "${GREEN}   ✓ $dir${NC}"
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 3. VERIFICAR PYTHON
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🐍 PASO 3/6: Verificando Python"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Python3 no está instalado"
+    exit 1
+fi
+
+PYTHON_VERSION=$(python3 --version | cut -d' ' -f2)
+echo "✅ Python $PYTHON_VERSION"
+
+# Verificar dependencias
+echo ""
+echo "📦 Verificando dependencias Python..."
+
+PACKAGES=("flask" "flask_socketio" "python_socketio")
+MISSING_PACKAGES=()
+
+for package in "${PACKAGES[@]}"; do
+    package_import=${package//-/_}
+    if python3 -c "import ${package_import}" 2>/dev/null; then
+        echo "  ✓ $package"
     else
-        echo -e "${YELLOW}   ⚠ Creando $dir${NC}"
-        mkdir -p "$dir"
+        echo "  ✗ $package (falta)"
+        MISSING_PACKAGES+=("$package")
     fi
 done
 
-# 4. Verificar archivos críticos
-echo -e "${BLUE}4. Verificando archivos...${NC}"
+if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
+    echo ""
+    echo "📥 Instalando dependencias faltantes..."
+    for package in "${MISSING_PACKAGES[@]}"; do
+        pip3 install "$package" --quiet
+    done
+fi
+
+echo ""
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 4. VERIFICAR ESTRUCTURA
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📁 PASO 4/6: Verificando estructura"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Crear directorios necesarios
+mkdir -p output logs webapp/uploads
+
 REQUIRED_FILES=(
     "ejecutar.sh"
-    "config/structures.json"
-    "config/formats.json"
     "webapp/server.py"
     "webapp/templates/index.html"
+    "config/structures.json"
+    "config/formats.json"
 )
 
-MISSING_FILES=()
+MISSING_FILES=0
 for file in "${REQUIRED_FILES[@]}"; do
     if [ -f "$file" ]; then
-        echo -e "${GREEN}   ✓ $file${NC}"
+        echo "  ✓ $file"
     else
-        echo -e "${RED}   ✗ Falta: $file${NC}"
-        MISSING_FILES+=("$file")
+        echo "  ✗ $file (FALTA)"
+        MISSING_FILES=$((MISSING_FILES + 1))
     fi
 done
 
-if [ ${#MISSING_FILES[@]} -gt 0 ]; then
-    echo -e "${RED}   Error: Faltan archivos críticos${NC}"
-    echo -e "${YELLOW}   Ejecuta los scripts de setup primero${NC}"
+if [ $MISSING_FILES -gt 0 ]; then
+    echo ""
+    echo "❌ Faltan $MISSING_FILES archivo(s) crítico(s)"
+    echo "   El repositorio puede estar incompleto"
+    echo "   Ejecuta: git pull origin main"
     exit 1
 fi
 
-# 5. Limpiar procesos anteriores
-echo -e "${BLUE}5. Limpiando procesos anteriores...${NC}"
-pkill -f "python3 server.py" 2>/dev/null && echo -e "${GREEN}   ✓ Servidor web detenido${NC}" || echo -e "${YELLOW}   - No había servidor corriendo${NC}"
-pkill -f "ejecutar.sh" 2>/dev/null && echo -e "${GREEN}   ✓ Pipelines detenidos${NC}" || echo -e "${YELLOW}   - No había pipelines corriendo${NC}"
+echo ""
 
-# 6. Iniciar servidor web
-echo -e "${BLUE}6. Iniciando servidor web...${NC}"
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 5. LIMPIAR PROCESOS PREVIOS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔄 PASO 5/6: Limpiando procesos previos"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Detener servidor previo
+if pgrep -f "python3 server.py" > /dev/null; then
+    echo "⚠️  Deteniendo servidor previo..."
+    pkill -f "python3 server.py"
+    sleep 2
+fi
+
+# Limpiar puerto 5001
+if lsof -i :5001 > /dev/null 2>&1; then
+    echo "⚠️  Liberando puerto 5001..."
+    lsof -ti :5001 | xargs kill -9 2>/dev/null
+    sleep 1
+fi
+
+echo "✅ Procesos limpiados"
+echo ""
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 6. INICIAR SERVIDOR
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🚀 PASO 6/6: Iniciando servidor"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
 cd webapp
-python3 server.py > ../logs/server.log 2>&1 &
-SERVER_PID=$!
-cd ..
 
+# Crear log con timestamp
+LOG_FILE="../logs/server_$(date +%Y%m%d_%H%M%S).log"
+
+echo "📝 Log: $LOG_FILE"
+echo ""
+
+# Iniciar servidor en background
+python3 server.py > "$LOG_FILE" 2>&1 &
+SERVER_PID=$!
+
+# Guardar PID
+echo $SERVER_PID > ../.server.pid
+
+echo "⏳ Esperando a que el servidor inicie..."
 sleep 3
 
-if ps -p $SERVER_PID > /dev/null; then
-    echo -e "${GREEN}   ✓ Servidor iniciado (PID: $SERVER_PID)${NC}"
+# Verificar que está corriendo
+if ps -p $SERVER_PID > /dev/null 2>&1; then
+    echo "✅ Servidor iniciado (PID: $SERVER_PID)"
 else
-    echo -e "${RED}   ✗ Error al iniciar servidor${NC}"
-    cat logs/server.log
+    echo "❌ Error al iniciar servidor"
+    echo ""
+    echo "Ver logs:"
+    echo "  tail -f $LOG_FILE"
     exit 1
 fi
 
-# 7. Información final
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo -e "${GREEN}✅ SISTEMA LISTO${NC}"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo -e "${BLUE}🌐 Web UI:${NC}       http://localhost:5001"
-echo -e "${BLUE}📊 Logs servidor:${NC} tail -f logs/server.log"
-echo -e "${BLUE}📁 Proyectos:${NC}     ls -lth output/"
-echo -e "${BLUE}🛑 Detener:${NC}       ./stop.sh"
-echo ""
-echo -e "${YELLOW}Presiona Ctrl+C para ver logs en tiempo real${NC}"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
+# Verificar que responde
+echo "⏳ Verificando respuesta del servidor..."
+sleep 2
 
-# 8. Seguir logs en tiempo real
-tail -f logs/server.log
+if curl -s http://localhost:5001/api/health > /dev/null 2>&1; then
+    echo "✅ Servidor respondiendo correctamente"
+else
+    echo "⚠️  Servidor iniciado pero no responde aún"
+    echo "   Dale unos segundos más..."
+fi
+
+cd ..
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ SISTEMA INICIADO"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "🌐 URL:           http://localhost:5001"
+echo "📁 Directorio:    $(pwd)"
+echo "🔧 PID Server:    $SERVER_PID"
+echo "📊 Log:           tail -f $LOG_FILE"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📊 ESTADÍSTICAS"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Contar recursos
+if [ -f "config/structures.json" ]; then
+    STRUCT_COUNT=$(python3 -c "import json; print(sum(len(v) for v in json.load(open('config/structures.json')).values()))" 2>/dev/null || echo "?")
+    echo "📖 Estructuras:   $STRUCT_COUNT"
+fi
+
+if [ -f "config/formats.json" ]; then
+    FORMAT_COUNT=$(python3 -c "import json; print(sum(len(v) for v in json.load(open('config/formats.json')).values()))" 2>/dev/null || echo "?")
+    echo "📺 Formatos:      $FORMAT_COUNT"
+fi
+
+PROMPT_COUNT=$(ls -1 prompts/*.txt 2>/dev/null | wc -l | tr -d ' ')
+echo "🤖 Expertos:      $PROMPT_COUNT"
+
+if [ -d "output" ]; then
+    PROJECT_COUNT=$(ls -1d output/*/ 2>/dev/null | wc -l | tr -d ' ')
+    echo "📂 Proyectos:     $PROJECT_COUNT"
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📖 COMANDOS ÚTILES"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "  Ver logs en tiempo real:"
+echo "    ./logs.sh"
+echo ""
+echo "  Verificar estado:"
+echo "    ./status.sh"
+echo ""
+echo "  Detener sistema:"
+echo "    ./stop.sh"
+echo ""
+echo "  Reiniciar:"
+echo "    ./restart.sh"
+echo ""
+echo "  Pipeline desde terminal:"
+echo "    ./ejecutar.sh \"tu idea aquí\""
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "🎬 Abriendo navegador..."
+sleep 2
+
+# Abrir navegador
+if command -v open &> /dev/null; then
+    open http://localhost:5001
+elif command -v xdg-open &> /dev/null; then
+    xdg-open http://localhost:5001
+else
+    echo "   Abre manualmente: http://localhost:5001"
+fi
+
+echo ""
+echo "✅ ¡Listo! El sistema está funcionando"
+echo ""

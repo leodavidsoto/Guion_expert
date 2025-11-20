@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 from flask_socketio import SocketIO, emit
 import subprocess
 from pathlib import Path
@@ -8,6 +8,7 @@ import time
 import os
 import json
 import sys
+import platform
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -19,7 +20,7 @@ app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
 socketio = SocketIO(
     app, 
     cors_allowed_origins="*",
-    ping_timeout=180,  # Aumentado a 3 minutos
+    ping_timeout=180,
     ping_interval=30,
     async_mode='threading'
 )
@@ -93,14 +94,148 @@ def get_projects():
                     except Exception as e:
                         print(f"Error leyendo {clasificacion_file}: {e}")
                 
+                # Contar archivos
+                file_count = sum(1 for _ in p.rglob('*') if _.is_file())
+                
                 projects.append({
                     'id': p.name,
                     'formato': formato,
                     'estructura': estructura,
-                    'created': p.stat().st_mtime
+                    'created': p.stat().st_mtime,
+                    'file_count': file_count,
+                    'path': str(p.absolute())
                 })
     
     return jsonify(projects[:30])
+
+@app.route('/api/project/<project_id>/open', methods=['POST'])
+def open_project_folder(project_id):
+    """Abre la carpeta del proyecto en Finder/Explorer"""
+    try:
+        project_path = OUTPUT_DIR / project_id
+        
+        if not project_path.exists():
+            return jsonify({'error': 'Proyecto no encontrado'}), 404
+        
+        # Detectar sistema operativo y abrir carpeta
+        system = platform.system()
+        
+        if system == 'Darwin':  # macOS
+            subprocess.run(['open', str(project_path)])
+        elif system == 'Windows':
+            subprocess.run(['explorer', str(project_path)])
+        elif system == 'Linux':
+            subprocess.run(['xdg-open', str(project_path)])
+        else:
+            return jsonify({'error': f'Sistema operativo no soportado: {system}'}), 400
+        
+        return jsonify({'success': True, 'path': str(project_path)})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/project/<project_id>/files')
+def get_project_files(project_id):
+    """Lista todos los archivos del proyecto"""
+    try:
+        project_path = OUTPUT_DIR / project_id
+        
+        if not project_path.exists():
+            return jsonify({'error': 'Proyecto no encontrado'}), 404
+        
+        files = []
+        
+        for file_path in project_path.rglob('*'):
+            if file_path.is_file():
+                relative_path = file_path.relative_to(project_path)
+                file_size = file_path.stat().st_size
+                
+                files.append({
+                    'name': file_path.name,
+                    'path': str(relative_path),
+                    'size': file_size,
+                    'size_human': format_size(file_size),
+                    'folder': str(relative_path.parent),
+                    'extension': file_path.suffix
+                })
+        
+        # Organizar por carpeta
+        folders = {}
+        for f in files:
+            folder = f['folder']
+            if folder not in folders:
+                folders[folder] = []
+            folders[folder].append(f)
+        
+        return jsonify({
+            'project_id': project_id,
+            'total_files': len(files),
+            'folders': folders
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/project/<project_id>/download/<path:filename>')
+def download_project_file(project_id, filename):
+    """Descarga un archivo específico del proyecto"""
+    try:
+        project_path = OUTPUT_DIR / project_id
+        file_path = project_path / filename
+        
+        if not file_path.exists() or not file_path.is_file():
+            return jsonify({'error': 'Archivo no encontrado'}), 404
+        
+        # Verificar que el archivo está dentro del proyecto (seguridad)
+        if not str(file_path.resolve()).startswith(str(project_path.resolve())):
+            return jsonify({'error': 'Acceso denegado'}), 403
+        
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=file_path.name
+        )
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/project/<project_id>/view/<path:filename>')
+def view_project_file(project_id, filename):
+    """Ve el contenido de un archivo de texto"""
+    try:
+        project_path = OUTPUT_DIR / project_id
+        file_path = project_path / filename
+        
+        if not file_path.exists() or not file_path.is_file():
+            return jsonify({'error': 'Archivo no encontrado'}), 404
+        
+        # Verificar seguridad
+        if not str(file_path.resolve()).startswith(str(project_path.resolve())):
+            return jsonify({'error': 'Acceso denegado'}), 403
+        
+        # Solo archivos de texto
+        if file_path.suffix not in ['.txt', '.md', '.json', '.py', '.sh', '.html']:
+            return jsonify({'error': 'Solo archivos de texto son visibles'}), 400
+        
+        content = file_path.read_text(encoding='utf-8', errors='ignore')
+        
+        return jsonify({
+            'filename': file_path.name,
+            'content': content,
+            'lines': len(content.split('\n')),
+            'size': file_path.stat().st_size
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def format_size(size):
+    """Formatea tamaño de archivo en formato legible"""
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size < 1024.0:
+            return f"{size:.1f} {unit}"
+        size /= 1024.0
+    return f"{size:.1f} TB"
 
 @app.route('/api/generate', methods=['POST'])
 def generate():
@@ -160,7 +295,7 @@ def run_pipeline_thread(idea, formato=None, estructura=None, auto_detect=True):
         )
         
         line_count = 0
-        timeout = 3600  # ⏱️ AUMENTADO A 1 HORA
+        timeout = 3600
         start_time = time.time()
         last_heartbeat = start_time
         
@@ -171,7 +306,6 @@ def run_pipeline_thread(idea, formato=None, estructura=None, auto_detect=True):
                 socketio.emit('log', {'type': 'error', 'message': '❌ Timeout: Proceso tomó más de 1 hora'})
                 break
             
-            # Heartbeat cada 30 segundos
             if time.time() - last_heartbeat > 30:
                 mins = int(elapsed / 60)
                 socketio.emit('log', {'type': 'info', 'message': f'💓 Activo: {mins} min - {line_count} líneas'})
@@ -239,6 +373,196 @@ def run_pipeline_thread(idea, formato=None, estructura=None, auto_detect=True):
         socketio.emit('log', {'type': 'error', 'message': f'❌ Error: {str(e)}'})
         import traceback
         traceback.print_exc()
+
+@app.route('/api/expert/run', methods=['POST'])
+def run_expert():
+    data = request.json
+    expert = data.get('expert')
+    input_text = data.get('input')
+    
+    if not expert or not input_text:
+        return jsonify({'error': 'Missing parameters'}), 400
+    
+    thread = threading.Thread(target=run_expert_thread, args=(expert, input_text))
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({'status': 'started'})
+
+def run_expert_thread(expert, input_text):
+    try:
+        socketio.emit('log', {'type': 'info', 'message': f'🎯 Ejecutando {expert}...'})
+        
+        expert_map = {
+            'clasificador': ('llama3.2:3b', 'prompts/00_clasificador_completo.txt'),
+            'concepto': ('qwen2.5:7b', 'prompts/01_concepto.txt'),
+            'arquitecto': ('qwen2.5:14b', 'prompts/02_arquitecto.txt'),
+            'escaletista': ('qwen2.5:7b', 'prompts/03_escaletista.txt'),
+            'dialoguista': ('qwen2.5:14b', 'prompts/04_dialoguista.txt'),
+            'localizador': ('qwen2.5:7b', 'prompts/10_localizador_chile.txt')
+        }
+        
+        if expert not in expert_map:
+            socketio.emit('log', {'type': 'error', 'message': f'Experto desconocido: {expert}'})
+            return
+        
+        model, prompt_file = expert_map[expert]
+        prompt_path = BASE_DIR / prompt_file
+        
+        if not prompt_path.exists():
+            socketio.emit('log', {'type': 'error', 'message': 'Prompt no encontrado'})
+            return
+        
+        prompt_content = prompt_path.read_text()
+        full_input = f"{prompt_content}\n\nINPUT:\n{input_text}"
+        
+        cmd = ['ollama', 'run', model, full_input]
+        
+        process = subprocess.Popen(
+            cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+        
+        result = ""
+        for line in iter(process.stdout.readline, ''):
+            if line:
+                result += line
+                socketio.emit('expert_update', {'expert': expert, 'content': result})
+        
+        process.wait()
+        
+        socketio.emit('log', {'type': 'success', 'message': f'✅ {expert} completado'})
+        socketio.emit('expert_completed', {'expert': expert, 'content': result})
+        
+    except Exception as e:
+        socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
+
+@app.route('/api/structure/generate', methods=['POST'])
+def generate_with_structure():
+    data = request.json
+    structure_id = data.get('structure_id')
+    input_text = data.get('input')
+    
+    if not structure_id or not input_text:
+        return jsonify({'error': 'Missing parameters'}), 400
+    
+    thread = threading.Thread(target=run_structure_thread, args=(structure_id, input_text))
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({'status': 'started'})
+
+def run_structure_thread(structure_id, input_text):
+    try:
+        socketio.emit('log', {'type': 'info', 'message': f'🏗️ Generando con {structure_id}...'})
+        
+        structure_prompts = {
+            'SAVE_THE_CAT': 'prompts/02_save_the_cat.txt',
+            'THREE_ACT': 'prompts/02_arquitecto.txt',
+            'HERO_JOURNEY': 'prompts/02_hero_journey.txt',
+            'STORY_CIRCLE': 'prompts/02_story_circle.txt',
+            'FIVE_ACT': 'prompts/02_five_act.txt',
+            'IN_MEDIA_RES': 'prompts/02_in_media_res.txt',
+            'SIMPLE': 'prompts/02_simple.txt'
+        }
+        
+        prompt_file = BASE_DIR / structure_prompts.get(structure_id, 'prompts/02_arquitecto.txt')
+        
+        if not prompt_file.exists():
+            socketio.emit('log', {'type': 'error', 'message': 'Prompt no encontrado'})
+            return
+        
+        prompt_content = prompt_file.read_text()
+        model = 'qwen2.5:14b'
+        
+        full_input = f"{prompt_content}\n\nESTRUCTURA: {structure_id}\n\nIDEA:\n{input_text}"
+        
+        cmd = ['ollama', 'run', model, full_input]
+        
+        process = subprocess.Popen(
+            cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+        
+        result = ""
+        for line in iter(process.stdout.readline, ''):
+            if line:
+                result += line
+        
+        process.wait()
+        
+        if process.returncode == 0:
+            socketio.emit('log', {'type': 'success', 'message': f'✅ {structure_id} generada'})
+            socketio.emit('structure_result', {'structure_id': structure_id, 'content': result})
+        else:
+            socketio.emit('log', {'type': 'error', 'message': '❌ Error'})
+        
+    except Exception as e:
+        socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
+
+@app.route('/api/flow/generate', methods=['POST'])
+def generate_flow():
+    data = request.json
+    scene_content = data.get('scene_content')
+    
+    if not scene_content:
+        return jsonify({'error': 'Scene content required'}), 400
+    
+    thread = threading.Thread(target=run_flow_thread, args=(scene_content,))
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({'status': 'started'})
+
+def run_flow_thread(scene_content):
+    try:
+        socketio.emit('log', {'type': 'info', 'message': '🎬 Director Flow analizando...'})
+        
+        prompt_file = BASE_DIR / 'prompts' / '11_director_flow.txt'
+        
+        if not prompt_file.exists():
+            socketio.emit('log', {'type': 'error', 'message': 'Prompt Flow no encontrado'})
+            return
+        
+        prompt_content = prompt_file.read_text()
+        model = 'qwen2.5:14b'
+        
+        full_input = f"{prompt_content}\n\nESCENA:\n{scene_content}"
+        
+        cmd = ['ollama', 'run', model, full_input]
+        
+        process = subprocess.Popen(
+            cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+        
+        result = ""
+        for line in iter(process.stdout.readline, ''):
+            if line:
+                result += line
+        
+        process.wait()
+        
+        if process.returncode == 0:
+            socketio.emit('log', {'type': 'success', 'message': '✅ Tabla Flow generada'})
+            socketio.emit('flow_completed', {'tabla': result})
+        else:
+            socketio.emit('log', {'type': 'error', 'message': '❌ Error'})
+        
+    except Exception as e:
+        socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
 
 @socketio.on('connect')
 def handle_connect():

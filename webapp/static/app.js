@@ -521,3 +521,262 @@ function getCategoryName(category) {
 setInterval(() => {
     socket.emit('ping');
 }, 25000);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PROYECTOS - MEJORADO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        const projects = await response.json();
+        
+        const grid = document.getElementById('projectsGrid');
+        grid.innerHTML = '';
+        
+        if (projects.length === 0) {
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No hay proyectos aún. ¡Genera tu primer guion!</p>';
+            return;
+        }
+        
+        projects.forEach(project => {
+            const card = createProjectCard(project);
+            grid.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error cargando proyectos:', error);
+    }
+}
+
+function createProjectCard(project) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cursor = 'pointer';
+    
+    const date = new Date(project.created * 1000);
+    
+    card.innerHTML = `
+        <div class="card-icon">📂</div>
+        <div class="card-title">${project.id}</div>
+        <div class="card-meta">
+            <span class="badge">📺 ${project.formato}</span>
+            <span class="badge">📖 ${project.estructura}</span>
+            <span class="badge">📄 ${project.file_count} archivos</span>
+            <span class="badge">📅 ${date.toLocaleDateString()}</span>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="btn btn-secondary" style="flex: 1; padding: 8px;" onclick="openProjectFolder('${project.id}', event)">
+                📁 Abrir Carpeta
+            </button>
+            <button class="btn btn-primary" style="flex: 1; padding: 8px;" onclick="viewProjectFiles('${project.id}', event)">
+                👁️ Ver Archivos
+            </button>
+        </div>
+    `;
+    
+    return card;
+}
+
+async function openProjectFolder(projectId, event) {
+    event.stopPropagation();
+    
+    try {
+        const response = await fetch(`/api/project/${projectId}/open`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            addLog('success', `✅ Carpeta abierta: ${projectId}`);
+        } else {
+            addLog('error', `❌ Error: ${data.error}`);
+        }
+    } catch (error) {
+        addLog('error', `❌ Error abriendo carpeta: ${error.message}`);
+    }
+}
+
+async function viewProjectFiles(projectId, event) {
+    event.stopPropagation();
+    
+    try {
+        const response = await fetch(`/api/project/${projectId}/files`);
+        const data = await response.json();
+        
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+            return;
+        }
+        
+        showProjectFilesModal(projectId, data);
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+
+function showProjectFilesModal(projectId, data) {
+    // Crear modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+    `;
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        max-width: 800px;
+        width: 100%;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 30px;
+    `;
+    
+    let filesHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">📂 ${projectId}</h2>
+            <button onclick="this.closest('[style*=fixed]').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+        </div>
+        <p style="color: #666; margin-bottom: 20px;">Total: ${data.total_files} archivos</p>
+    `;
+    
+    // Organizar por carpeta
+    for (const [folder, files] of Object.entries(data.folders)) {
+        filesHTML += `
+            <div style="margin-bottom: 20px;">
+                <h3 style="background: var(--primary); color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                    📁 ${folder}
+                </h3>
+                <div style="display: grid; gap: 10px;">
+        `;
+        
+        files.forEach(file => {
+            const icon = getFileIcon(file.extension);
+            filesHTML += `
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <strong>${icon} ${file.name}</strong>
+                        <div style="color: #666; font-size: 0.85em;">${file.size_human}</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        ${file.extension === '.txt' || file.extension === '.md' ? 
+                            `<button onclick="viewFile('${projectId}', '${file.path}')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85em;">👁️ Ver</button>` : ''}
+                        <button onclick="downloadFile('${projectId}', '${file.path}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85em;">⬇️ Descargar</button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        filesHTML += `
+                </div>
+            </div>
+        `;
+    }
+    
+    modalContent.innerHTML = filesHTML;
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Cerrar al hacer click fuera
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+async function viewFile(projectId, filePath) {
+    try {
+        const response = await fetch(`/api/project/${projectId}/view/${filePath}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+            return;
+        }
+        
+        showFileContentModal(data);
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+
+function showFileContentModal(data) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        padding: 20px;
+    `;
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        max-width: 900px;
+        width: 100%;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    `;
+    
+    modalContent.innerHTML = `
+        <div style="padding: 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="margin: 0;">📄 ${data.filename}</h3>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">${data.lines} líneas • ${data.size} bytes</p>
+            </div>
+            <button onclick="this.closest('[style*=fixed]').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+        </div>
+        <div style="flex: 1; overflow-y: auto; padding: 20px;">
+            <pre style="margin: 0; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.6;">${escapeHtml(data.content)}</pre>
+        </div>
+    `;
+    
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+function downloadFile(projectId, filePath) {
+    window.open(`/api/project/${projectId}/download/${filePath}`, '_blank');
+}
+
+function getFileIcon(extension) {
+    const icons = {
+        '.txt': '📄',
+        '.md': '📝',
+        '.json': '📋',
+        '.py': '🐍',
+        '.sh': '⚙️',
+        '.html': '🌐',
+        '.jpg': '🖼️',
+        '.png': '🖼️',
+        '.pdf': '📕'
+    };
+    return icons[extension] || '📄';
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
