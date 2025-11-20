@@ -1,0 +1,58 @@
+Convierte esta escena en un FLOW completo para Veo 3.1 con tracking de entidades.
+
+GENERA UN OBJETO JSON POR ESCENA:
+
+{
+  "id_flow_escena": "[NUM]_[NOMBRE_DESCRIPTIVO]",
+  "descripcion_escena": "Resumen de qué ocurre",
+  
+  "parametros_globales": {
+    "estilo_visual": "Cinematic, 4k, hyperrealistic, [atmósfera], [grading color]",
+    "iluminacion_general": "[Descripción técnica luz dominante]",
+    "locacion": "[Descripción detallada del lugar]",
+    "ritmo": "[Lento/Medio/Rápido], [tono emocional]",
+    "audio_ambiental": "[Sonidos de fondo constantes]"
+  },
+  
+  "tracking_entidades": {
+    "personajes": [
+      {
+        "id_entidad": "PERS_1",
+        "descripcion": "Descripción DETALLADA: edad, físico, vestimenta, rasgos distintivos"
+      }
+    ],
+    "objetos_clave": [
+      {
+        "id_entidad": "OBJ_1",
+        "descripcion": "Descripción DETALLADA del objeto importante"
+      }
+    ]
+  },
+  
+  "secuencia_planos": [
+    {
+      "plano_id": "1A",
+      "descripcion_corta": "Qué ocurre en este plano",
+      "duracion_aprox_seg": 4,
+      "cinematografia": {
+        "tipo_plano": "WIDE SHOT",
+        "angulo_lente": "Eye-level, 35mm",
+        "movimiento_camara": "Static"
+      },
+      "entidades_en_plano": ["PERS_1", "OBJ_1"],
+      "accion_continua": "Descripción secuencial de toda la acción",
+      "dialogo_sfx": "Diálogos exactos y efectos de sonido",
+      "prompt_veo_sintetizado": "[TIPO_PLANO] [movimiento] ([lente]). [Acción usando [ID_ENTIDAD: desc breve]]. [Atmósfera]. Estilo [visual]."
+    }
+  ]
+}
+
+REGLAS CRÍTICAS:
+1. ID de entidad: nombres claros (ROBOT_1, RADIO_VINTAGE, PROTA_1)
+2. Descripciones detalladas en tracking_entidades
+3. Sintaxis en prompts: [ID_ENTIDAD: descripción breve]
+4. JSON en UNA línea (compacto)
+5. Sin markdown, sin bloques de código
+
+EJEMPLO DE SINTAXIS DE TRACKING:
+"[ROBOT_1: robot humanoide oxidado, ojos LED azules] camina hacia [RADIO_VINTAGE: radio válvulas años 50]"

@@ -1,0 +1,412 @@
+{
+  "vertical_social": {
+    "YOUTUBE_SHORT": {
+      "name": "YouTube Short",
+      "duration": "15-60s",
+      "aspect": "9:16",
+      "platform": "YouTube",
+      "description": "Videos verticales optimizados para YouTube Shorts"
+    },
+    "REEL_INSTAGRAM": {
+      "name": "Instagram Reel",
+      "duration": "15-90s",
+      "aspect": "9:16",
+      "platform": "Instagram",
+      "description": "Reels con música, efectos y transiciones"
+    },
+    "TIKTOK": {
+      "name": "TikTok",
+      "duration": "15-180s",
+      "aspect": "9:16",
+      "platform": "TikTok",
+      "description": "Contenido viral vertical para TikTok"
+    },
+    "STORY": {
+      "name": "Story (IG/FB)",
+      "duration": "15s",
+      "aspect": "9:16",
+      "platform": "Instagram/Facebook",
+      "description": "Historias efímeras de 24 horas"
+    },
+    "SNAPCHAT": {
+      "name": "Snapchat Spotlight",
+      "duration": "60s",
+      "aspect": "9:16",
+      "platform": "Snapchat",
+      "description": "Videos verticales para Snapchat Spotlight"
+    },
+    "YOUTUBE_VERTICAL": {
+      "name": "YouTube Vertical",
+      "duration": "3-10 min",
+      "aspect": "9:16",
+      "platform": "YouTube",
+      "description": "Videos verticales largos para YouTube"
+    },
+    "PINTEREST_IDEA": {
+      "name": "Pinterest Idea Pin",
+      "duration": "15-60s",
+      "aspect": "9:16",
+      "platform": "Pinterest",
+      "description": "Pins de video verticales para Pinterest"
+    },
+    "REDDIT_VIDEO": {
+      "name": "Reddit Video",
+      "duration": "60s",
+      "aspect": "9:16",
+      "platform": "Reddit",
+      "description": "Videos verticales para Reddit mobile"
+    }
+  },
+  "horizontal_social": {
+    "YOUTUBE_VIDEO": {
+      "name": "Video YouTube Estándar",
+      "duration": "8-15 min",
+      "aspect": "16:9",
+      "platform": "YouTube",
+      "description": "Videos horizontales tradicionales de YouTube"
+    },
+    "FACEBOOK_VIDEO": {
+      "name": "Video Facebook",
+      "duration": "1-3 min",
+      "aspect": "1:1 o 16:9",
+      "platform": "Facebook",
+      "description": "Videos para feed de Facebook"
+    },
+    "LINKEDIN_VIDEO": {
+      "name": "Video LinkedIn",
+      "duration": "30-90s",
+      "aspect": "1:1 o 16:9",
+      "platform": "LinkedIn",
+      "description": "Contenido profesional para LinkedIn"
+    },
+    "TWITTER_VIDEO": {
+      "name": "Video Twitter/X",
+      "duration": "45s",
+      "aspect": "16:9 o 1:1",
+      "platform": "Twitter/X",
+      "description": "Videos para Twitter/X"
+    },
+    "TWITCH_CLIP": {
+      "name": "Twitch Clip",
+      "duration": "60s",
+      "aspect": "16:9",
+      "platform": "Twitch",
+      "description": "Clips destacados de streams"
+    },
+    "VIMEO_SHOWCASE": {
+      "name": "Vimeo Showcase",
+      "duration": "5-20 min",
+      "aspect": "16:9",
+      "platform": "Vimeo",
+      "description": "Videos de alta calidad para portafolio"
+    }
+  },
+  "streaming": {
+    "SERIE_STREAMING": {
+      "name": "Episodio Serie Streaming",
+      "duration": "45-60 min",
+      "aspect": "16:9",
+      "platform": "Netflix/Prime/Disney+",
+      "description": "Episodio de serie para plataformas streaming"
+    },
+    "EPISODIO_SITCOM": {
+      "name": "Episodio Sitcom",
+      "duration": "22-30 min",
+      "aspect": "16:9",
+      "platform": "Streaming/TV",
+      "description": "Episodio de comedia de situación"
+    },
+    "MINISERIE": {
+      "name": "Episodio Miniserie",
+      "duration": "30-45 min",
+      "aspect": "16:9",
+      "platform": "Streaming",
+      "description": "Series limitadas de 4-8 episodios"
+    },
+    "DOCUSERIE": {
+      "name": "Episodio Docuserie",
+      "duration": "40-60 min",
+      "aspect": "16:9",
+      "platform": "Streaming",
+      "description": "Documentales seriados"
+    },
+    "TV_MOVIE": {
+      "name": "Película para TV",
+      "duration": "90-120 min",
+      "aspect": "16:9",
+      "platform": "TV/Streaming",
+      "description": "Películas hechas para televisión"
+    },
+    "DIRECT_STREAMING": {
+      "name": "Direct-to-Streaming",
+      "duration": "Variable",
+      "aspect": "16:9",
+      "platform": "Streaming",
+      "description": "Contenido directo a plataformas sin cine"
+    }
+  },
+  "traditional": {
+    "VIDEOCLIP": {
+      "name": "Videoclip Musical",
+      "duration": "3-5 min",
+      "aspect": "16:9 o 1:1",
+      "platform": "YouTube/Vevo",
+      "description": "Videos musicales profesionales"
+    },
+    "CORTO": {
+      "name": "Cortometraje",
+      "duration": "10-30 min",
+      "aspect": "16:9",
+      "platform": "Festivales/Streaming",
+      "description": "Cortometrajes de ficción"
+    },
+    "MEDIO": {
+      "name": "Mediometraje",
+      "duration": "30-60 min",
+      "aspect": "16:9",
+      "platform": "Festivales/TV",
+      "description": "Formato intermedio entre corto y largo"
+    },
+    "LARGO": {
+      "name": "Largometraje",
+      "duration": "90-120 min",
+      "aspect": "16:9 o 2.39:1",
+      "platform": "Cine/Streaming",
+      "description": "Películas de larga duración"
+    },
+    "LARGO_EXTENDIDO": {
+      "name": "Largometraje Extendido",
+      "duration": "120-180 min",
+      "aspect": "16:9 o 2.39:1",
+      "platform": "Cine/Streaming",
+      "description": "Películas épicas extensas"
+    }
+  },
+  "musical": {
+    "LYRIC_VIDEO": {
+      "name": "Lyric Video",
+      "duration": "3-5 min",
+      "aspect": "16:9",
+      "platform": "YouTube",
+      "description": "Video con letras animadas"
+    },
+    "MUSIC_DOCUMENTARY": {
+      "name": "Music Documentary",
+      "duration": "60-90 min",
+      "aspect": "16:9",
+      "platform": "Streaming",
+      "description": "Documental sobre artista o banda"
+    },
+    "CONCERT_FILM": {
+      "name": "Concert Film",
+      "duration": "90-120 min",
+      "aspect": "16:9",
+      "platform": "Cine/Streaming",
+      "description": "Filmación de concierto en vivo"
+    },
+    "BEHIND_SCENES": {
+      "name": "Behind the Scenes",
+      "duration": "5-15 min",
+      "aspect": "16:9",
+      "platform": "YouTube",
+      "description": "Making-of del videoclip o concierto"
+    }
+  },
+  "educational": {
+    "TUTORIAL": {
+      "name": "Tutorial",
+      "duration": "3-10 min",
+      "aspect": "16:9",
+      "platform": "YouTube/Plataformas educativas",
+      "description": "Tutoriales paso a paso"
+    },
+    "EXPLAINER": {
+      "name": "Video Explainer",
+      "duration": "1-3 min",
+      "aspect": "16:9 o 1:1",
+      "platform": "Web/Redes",
+      "description": "Explicación de conceptos complejos"
+    },
+    "CURSO_MODULO": {
+      "name": "Módulo de Curso",
+      "duration": "15-30 min",
+      "aspect": "16:9",
+      "platform": "Plataformas educativas",
+      "description": "Lecciones estructuradas de cursos"
+    },
+    "MASTERCLASS": {
+      "name": "Masterclass",
+      "duration": "45-90 min",
+      "aspect": "16:9",
+      "platform": "Plataformas educativas",
+      "description": "Clases magistrales profundas"
+    },
+    "WEBINAR": {
+      "name": "Webinar",
+      "duration": "30-60 min",
+      "aspect": "16:9",
+      "platform": "Zoom/YouTube Live",
+      "description": "Seminarios web en vivo"
+    },
+    "MICRO_LEARNING": {
+      "name": "Micro-Learning",
+      "duration": "1-5 min",
+      "aspect": "16:9 o 9:16",
+      "platform": "Apps educativas",
+      "description": "Cápsulas de aprendizaje ultra-cortas"
+    },
+    "CASE_STUDY": {
+      "name": "Case Study Video",
+      "duration": "10-20 min",
+      "aspect": "16:9",
+      "platform": "YouTube/Corporativo",
+      "description": "Análisis detallado de casos"
+    },
+    "EDUCATIONAL_SERIES": {
+      "name": "Educational Series",
+      "duration": "20-30 min",
+      "aspect": "16:9",
+      "platform": "Streaming educativo",
+      "description": "Series educativas por episodios"
+    }
+  },
+  "commercial": {
+    "AD_SPOT_15": {
+      "name": "Spot Publicitario 15s",
+      "duration": "15s",
+      "aspect": "16:9 o 1:1",
+      "platform": "TV/Digital",
+      "description": "Comercial ultra-corto"
+    },
+    "AD_SPOT_30": {
+      "name": "Spot Publicitario 30s",
+      "duration": "30s",
+      "aspect": "16:9 o 1:1",
+      "platform": "TV/Digital",
+      "description": "Comercial estándar"
+    },
+    "AD_SPOT_60": {
+      "name": "Spot Publicitario 60s",
+      "duration": "60s",
+      "aspect": "16:9",
+      "platform": "TV/Digital",
+      "description": "Comercial extendido"
+    },
+    "BRANDED_CONTENT": {
+      "name": "Branded Content",
+      "duration": "2-5 min",
+      "aspect": "16:9",
+      "platform": "Redes/YouTube",
+      "description": "Contenido de marca narrativo"
+    },
+    "VIDEO_CORPORATIVO": {
+      "name": "Video Corporativo",
+      "duration": "2-4 min",
+      "aspect": "16:9",
+      "platform": "Web/LinkedIn",
+      "description": "Video institucional de empresa"
+    },
+    "TESTIMONIAL": {
+      "name": "Testimonial",
+      "duration": "1-3 min",
+      "aspect": "16:9",
+      "platform": "Web/Redes",
+      "description": "Testimonios de clientes"
+    },
+    "PRODUCT_DEMO": {
+      "name": "Product Demo",
+      "duration": "3-7 min",
+      "aspect": "16:9",
+      "platform": "YouTube/Web",
+      "description": "Demostración de producto"
+    },
+    "COMPANY_CULTURE": {
+      "name": "Company Culture",
+      "duration": "2-5 min",
+      "aspect": "16:9",
+      "platform": "LinkedIn/Web",
+      "description": "Mostrar cultura empresarial"
+    },
+    "RECRUITMENT": {
+      "name": "Recruitment Video",
+      "duration": "2-4 min",
+      "aspect": "16:9",
+      "platform": "LinkedIn/Web",
+      "description": "Video de reclutamiento"
+    },
+    "INVESTOR_PITCH": {
+      "name": "Investor Pitch Video",
+      "duration": "5-10 min",
+      "aspect": "16:9",
+      "platform": "Corporativo",
+      "description": "Pitch para inversionistas"
+    }
+  },
+  "experimental": {
+    "MICRO_FICTION": {
+      "name": "Microficción",
+      "duration": "60-90s",
+      "aspect": "Variable",
+      "platform": "Festivales/Arte",
+      "description": "Narrativas ultra-cortas experimentales"
+    },
+    "POEMA_VISUAL": {
+      "name": "Poema Visual",
+      "duration": "2-4 min",
+      "aspect": "Variable",
+      "platform": "Arte/Festivales",
+      "description": "Video-poesía experimental"
+    },
+    "LOOP": {
+      "name": "Loop Infinito",
+      "duration": "10-30s",
+      "aspect": "1:1",
+      "platform": "Instalaciones/Digital",
+      "description": "Videos circulares perfectos"
+    },
+    "VIDEO_ART": {
+      "name": "Video Art",
+      "duration": "Variable",
+      "aspect": "Variable",
+      "platform": "Galerías/Museos",
+      "description": "Arte en video para instalaciones"
+    },
+    "ABSTRACT_FILM": {
+      "name": "Abstract Film",
+      "duration": "5-20 min",
+      "aspect": "Variable",
+      "platform": "Festivales/Arte",
+      "description": "Cine abstracto no-narrativo"
+    }
+  },
+  "gaming": {
+    "GAME_TRAILER": {
+      "name": "Game Trailer",
+      "duration": "60-90s",
+      "aspect": "16:9",
+      "platform": "YouTube/Steam",
+      "description": "Tráiler de videojuego"
+    },
+    "LETS_PLAY": {
+      "name": "Let's Play Highlight",
+      "duration": "5-15 min",
+      "aspect": "16:9",
+      "platform": "YouTube/Twitch",
+      "description": "Highlights de gameplay"
+    },
+    "SPEEDRUN": {
+      "name": "Speedrun Showcase",
+      "duration": "Variable",
+      "aspect": "16:9",
+      "platform": "YouTube/Twitch",
+      "description": "Speedruns comentados"
+    },
+    "GAME_REVIEW": {
+      "name": "Game Review",
+      "duration": "10-20 min",
+      "aspect": "16:9",
+      "platform": "YouTube",
+      "description": "Reseñas de videojuegos"
+    }
+  }
+}

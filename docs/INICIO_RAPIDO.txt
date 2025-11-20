@@ -1,0 +1,40 @@
+═══════════════════════════════════════════════
+INICIO RÁPIDO
+═══════════════════════════════════════════════
+
+OPCIÓN 1: Solo Pipeline (sin storyboard)
+─────────────────────────────────────────────
+
+cd ~/guion_experts_suite_v2
+./ejecutar.sh "tu idea"
+
+Tiempo: 25-35 min
+
+
+OPCIÓN 2: Con Storyboard
+─────────────────────────────────────────────
+
+Terminal 1 (SD):
+  cd ~/stable-diffusion-webui
+  ./webui.sh --api --listen
+
+Terminal 2 (Pipeline):
+  cd ~/guion_experts_suite_v2
+  ./ejecutar_con_storyboard.sh "tu idea"
+
+Tiempo: 35-50 min
+
+
+Ver Resultados
+─────────────────────────────────────────────
+
+Proyecto en: output/[timestamp]/
+
+Ver concepto:
+  cat output/[timestamp]/concepto/result.txt
+
+Ver escenas:
+  ls output/[timestamp]/escenas/
+
+Ver storyboard:
+  open output/[timestamp]/storyboard.html

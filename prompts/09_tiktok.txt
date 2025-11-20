@@ -1,0 +1,101 @@
+Genera un script para TikTok (vertical 9:16, 15-180 segundos).
+
+**ESTRUCTURA TIKTOK:**
+
+**[0-0.5 SEG] SCROLL STOPPER:**
+- ¡INCLUSO MÁS RÁPIDO QUE OTROS FORMATOS!
+- Visual extremo o statement controversial
+
+**[0.5-3 SEG] HOOK:**
+- Pregunta directa a cámara
+- Relatable moment
+- "POV:", "Storytime:", "Parte 1:"
+
+**[3-60 SEG] CONTENIDO:**
+- Hyper-editable: un cut cada 1-2 segundos
+- Duetos, stitches, trends
+- Captions automáticos activados
+
+**[60-180 SEG] CONCLUSIÓN:**
+- Puede ser serie (Parte 1, 2, 3...)
+- "Espera el final..."
+- Engagement bait (pero auténtico)
+
+---
+
+**FORMATO OUTPUT:**
+```
+=== TIKTOK SCRIPT ===
+
+TÍTULO INTERNO: [Para organización]
+DURACIÓN TARGET: [15/30/60/180 seg]
+TIPO: [Original/Trend/Challenge/Educativo/Storytime]
+
+---
+
+AUDIO:
+- Canción: [Trending sound o original]
+- Sección: [Qué parte del audio usar]
+- BPM: [Para sincronizar cuts]
+
+---
+
+[0.0-0.5s] SCROLL STOPPER
+SHOT: [Primer frame]
+ACTION: [Movimiento súbito]
+CAPTION: "[Texto grande]"
+EFFECT: [Zoom/Shake/Flash]
+
+[0.5-3s] HOOK
+SHOT: [A cámara, close-up]
+DIALOGUE: "[Primera frase textual]"
+EXPRESSION: [Facial expression específica]
+
+[3s-XXXX] BEATS (cada 2-3 segundos)
+
+BEAT 1 (3-5s):
+- SHOT: [Ángulo]
+- ACTION: [Qué pasa]
+- CAPTION: "[Auto-caption text]"
+- CUT: [Tipo de corte]
+
+BEAT 2 (5-7s):
+- SHOT: [Cambio]
+- ACTION: [Siguiente acción]
+- SYNC: [Con música]
+
+[... continuar]
+
+BEAT FINAL:
+- PAYOFF: [Remate]
+- LOOP?: [Opcional para re-watches]
+
+---
+
+ENGAGEMENT STRATEGY:
+- CTA: [Específico de TikTok: "Duet esto", "Part 2?", "Stitch si..."]
+- HASHTAGS: [Mix trending + nicho, max 5]
+  #FYP #ForYouPage #[trending] #[nicho] #[nicho]
+- POST TIME: [Basado en algoritmo actual]
+
+DUET/STITCH POTENTIAL:
+[¿Este video invita a respuestas? ¿Cómo?]
+
+SERIES POTENTIAL:
+[¿Puede ser Parte 1 de algo? ¿Qué sigue?]
+
+---
+
+EDITING NOTES:
+- Transitions: [Específicas de TikTok: Swipe, Finger snap, etc]
+- Effects: [Green screen, Time warp, etc]
+- Text: [Bold, aparece palabra por palabra]
+- Captions: [Auto-generated ON]
+```
+
+**FILOSOFÍA TIKTOK:**
+- Auténtico > Pulido
+- Rápido > Perfecto  
+- Relatable > Aspiracional
+- Community > Broadcast
+- Trends > Original (pero con twist)

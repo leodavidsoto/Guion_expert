@@ -1,0 +1,73 @@
+# TEMPLATES INSTAGRAM REELS
+
+## 1. TRANSICIÓN TREND
+```
+[0-1s] Pose/outfit A
+[1s] Transición (snap, jump, spin)
+[2-30s] Secuencia de transiciones con cambios
+[30s] Vuelta a pose inicial (LOOP)
+Audio: Trending con drops para transiciones
+```
+
+## 2. DAY IN THE LIFE
+```
+[0-3s] "Un día en mi vida como [ROL]"
+[3-60s] Clips estéticos cronológicos
+- Mañana: luz natural, slow-mo
+- Tarde: clips energéticos
+- Noche: lighting acogedor
+[60-90s] Cierre con golden hour o night vibe
+Caption: Detalle de un momento específico
+```
+
+## 3. TUTORIAL ESTÉTICO
+```
+[0-2s] Resultado final (visual perfecto)
+[2-5s] "Así lo hice:"
+[5-60s] Proceso con música matching
+- Cada paso sincronizado con beat
+- Overhead shots, close-ups, detail shots
+[60s] Vuelta al resultado (LOOP)
+```
+
+## 4. PRODUCT SHOWCASE
+```
+[0-1s] Unboxing o reveal
+[1-30s] Diferentes ángulos y usos
+- Morning light
+- Golden hour
+- Neon/aesthetic lighting
+[30-60s] Final thoughts sin ser obvio
+Caption: Review honesta, link en bio
+```
+
+## 5. GET READY WITH ME
+```
+[0-3s] "Get ready with me for [OCASIÓN]"
+[3-60s] Secuencia de preparación
+- Skincare (producto close-ups)
+- Makeup (satisfying moments)
+- Outfit (transiciones)
+[60-90s] Final look, spin, mirror check
+```
+
+## 6. PHOTO DUMP
+```
+[0-90s] Colección de fotos/clips con tema
+- Transiciones suaves
+- Color grading consistente
+- Música emotional o upbeat
+- Puede incluir texto sobre momentos
+Caption: Reflexión o historia detrás
+```
+
+## 7. TRAVEL/PLACE
+```
+[0-3s] Establishing shot del lugar
+[3-60s] Secuencia de best shots
+- Golden hour
+- Details (comida, gente, texturas)
+- Movement (walking, panning)
+[60-90s] Sunset o momento memorable
+Caption: Mini guía o feeling del lugar
+```

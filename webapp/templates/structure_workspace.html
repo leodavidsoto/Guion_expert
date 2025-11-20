@@ -1,0 +1,214 @@
+<!-- VIEW: STRUCTURE WORKSPACE -->
+<div id="structureWorkspaceView" class="view">
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+        <button onclick="switchView('structures')" class="btn btn-secondary">
+            ← Volver a Estructuras
+        </button>
+        <div style="flex: 1;">
+            <h2 id="workspaceTitle" style="margin: 0;">📖 Workspace de Estructura</h2>
+            <p id="workspaceSubtitle" style="color: #666; margin: 5px 0 0 0;">Trabaja con esta estructura específica</p>
+        </div>
+    </div>
+    
+    <!-- Grid de 3 columnas -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+        <!-- COLUMNA 1: INPUT -->
+        <div class="form-section">
+            <h3>💡 Tu Idea</h3>
+            <textarea id="workspaceIdea" placeholder="Describe tu historia para esta estructura..." style="min-height: 150px;"></textarea>
+            
+            <button id="workspaceGenerateBtn" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
+                🚀 Generar con esta Estructura
+            </button>
+            
+            <div id="workspaceInfo" style="margin-top: 15px; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 0.9em;">
+                <strong>ℹ️ Sobre esta estructura</strong>
+                <div id="workspaceInfoContent" style="margin-top: 10px; color: #666;">
+                    Selecciona una estructura para comenzar
+                </div>
+            </div>
+        </div>
+        
+        <!-- COLUMNA 2: BEATS/ESTRUCTURA -->
+        <div class="form-section">
+            <h3>🏗️ Beats de la Estructura</h3>
+            <div id="workspaceBeats" style="max-height: 400px; overflow-y: auto;">
+                <p style="color: #999; text-align: center; padding: 40px;">
+                    Los beats aparecerán aquí al generar
+                </p>
+            </div>
+        </div>
+        
+        <!-- COLUMNA 3: DIRECTOR FLOW -->
+        <div class="form-section">
+            <h3>🎬 Director Flow</h3>
+            <p style="font-size: 0.85em; color: #666; margin-bottom: 10px;">
+                Genera tabla de rodaje para Google Flow (Veo)
+            </p>
+            
+            <textarea id="flowSceneInput" placeholder="Pega aquí una escena o beat para generar tabla de rodaje..." style="min-height: 100px;"></textarea>
+            
+            <button id="flowGenerateBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                🎥 Generar Tabla de Rodaje
+            </button>
+            
+            <div id="flowOutput" style="margin-top: 15px; max-height: 250px; overflow-y: auto; display: none;">
+                <div class="preview-content" id="flowTableContent" style="font-size: 0.8em;">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ÁREA DE RESULTADO COMPLETO -->
+    <div class="preview-section">
+        <h3>📋 Resultado Completo</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="btn btn-secondary" onclick="showWorkspaceTab('estructura')">
+                🏗️ Estructura
+            </button>
+            <button class="btn btn-secondary" onclick="showWorkspaceTab('escaleta')">
+                📋 Escaleta
+            </button>
+            <button class="btn btn-secondary" onclick="showWorkspaceTab('escenas')">
+                🎬 Escenas
+            </button>
+            <button class="btn btn-secondary" onclick="showWorkspaceTab('flow')">
+                🎥 Tabla Flow
+            </button>
+        </div>
+        
+        <div id="workspaceResultArea">
+            <div id="workspaceEstructuraTab" class="workspace-tab">
+                <div class="preview-content empty">Genera primero el proyecto</div>
+            </div>
+            <div id="workspaceEscaletaTab" class="workspace-tab hidden">
+                <div class="preview-content empty">Genera primero el proyecto</div>
+            </div>
+            <div id="workspaceEscenasTab" class="workspace-tab hidden">
+                <div class="preview-content empty">Genera primero el proyecto</div>
+            </div>
+            <div id="workspaceFlowTab" class="workspace-tab hidden">
+                <div class="preview-content empty">Usa Director Flow primero</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.workspace-tab {
+    display: block;
+}
+.workspace-tab.hidden {
+    display: none;
+}
+</style>
+
+<script>
+let currentStructureId = null;
+
+async function openStructureWorkspace(structureId) {
+    currentStructureId = structureId;
+    
+    // Load structure details
+    const response = await fetch(`/api/structure/${structureId}`);
+    const structure = await response.json();
+    
+    // Update UI
+    document.getElementById('workspaceTitle').textContent = `📖 ${structure.name}`;
+    document.getElementById('workspaceSubtitle').textContent = structure.description;
+    
+    document.getElementById('workspaceInfoContent').innerHTML = `
+        <p><strong>Autor:</strong> ${structure.author || 'N/A'}</p>
+        <p><strong>Beats:</strong> ${structure.beats}</p>
+        <p><strong>Duración típica:</strong> ${structure.duration}</p>
+        <p><strong>Mejor para:</strong> ${structure.best_for}</p>
+        <p><strong>Dificultad:</strong> ${structure.difficulty || 'Media'}</p>
+        ${structure.key_beats ? `<p><strong>Beats clave:</strong> ${structure.key_beats.slice(0, 5).join(', ')}...</p>` : ''}
+    `;
+    
+    // Switch to workspace view
+    switchView('structureWorkspace');
+}
+
+document.getElementById('workspaceGenerateBtn')?.addEventListener('click', async () => {
+    const idea = document.getElementById('workspaceIdea').value.trim();
+    if (!idea) {
+        alert('Ingresa una idea');
+        return;
+    }
+    
+    if (!currentStructureId) {
+        alert('Error: No hay estructura seleccionada');
+        return;
+    }
+    
+    document.getElementById('workspaceGenerateBtn').disabled = true;
+    document.getElementById('workspaceGenerateBtn').textContent = '⏳ Generando...';
+    
+    const response = await fetch('/api/structure/workspace/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            idea: idea,
+            structure_id: currentStructureId
+        })
+    });
+    
+    addLog(`Generando con estructura: ${currentStructureId}`, 'info');
+});
+
+document.getElementById('flowGenerateBtn')?.addEventListener('click', async () => {
+    const sceneContent = document.getElementById('flowSceneInput').value.trim();
+    if (!sceneContent) {
+        alert('Ingresa contenido de escena');
+        return;
+    }
+    
+    document.getElementById('flowGenerateBtn').disabled = true;
+    document.getElementById('flowGenerateBtn').textContent = '⏳ Generando...';
+    document.getElementById('flowOutput').style.display = 'block';
+    document.getElementById('flowTableContent').textContent = 'Generando tabla de rodaje...';
+    
+    const response = await fetch('/api/flow/generate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            scene_content: sceneContent
+        })
+    });
+    
+    addLog('🎬 Director Flow procesando...', 'info');
+});
+
+socket.on('flow_completed', (data) => {
+    document.getElementById('flowTableContent').textContent = data.tabla;
+    document.getElementById('flowGenerateBtn').disabled = false;
+    document.getElementById('flowGenerateBtn').textContent = '🎥 Generar Tabla de Rodaje';
+    
+    // También mostrar en tab de workspace
+    document.getElementById('workspaceFlowTab').querySelector('.preview-content').textContent = data.tabla;
+    document.getElementById('workspaceFlowTab').querySelector('.preview-content').classList.remove('empty');
+});
+
+socket.on('workspace_completed', (data) => {
+    document.getElementById('workspaceGenerateBtn').disabled = false;
+    document.getElementById('workspaceGenerateBtn').textContent = '🚀 Generar con esta Estructura';
+    addLog('✅ Workspace completado', 'success');
+});
+
+function showWorkspaceTab(tabName) {
+    document.querySelectorAll('.workspace-tab').forEach(tab => tab.classList.add('hidden'));
+    
+    const tabs = {
+        'estructura': 'workspaceEstructuraTab',
+        'escaleta': 'workspaceEscaletaTab',
+        'escenas': 'workspaceEscenasTab',
+        'flow': 'workspaceFlowTab'
+    };
+    
+    const targetTab = document.getElementById(tabs[tabName]);
+    if (targetTab) {
+        targetTab.classList.remove('hidden');
+    }
+}
+</script>

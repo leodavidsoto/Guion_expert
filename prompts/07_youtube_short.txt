@@ -1,0 +1,76 @@
+Genera un script completo para YouTube Short (vertical 9:16, máximo 60 segundos).
+
+**ESTRUCTURA OBLIGATORIA:**
+
+**[0-3 SEG] HOOK (GANCHO):**
+- Primera frase/imagen DEBE capturar atención
+- Pregunta provocativa, statement impactante, o visual sorprendente
+- Ejemplos: "¿Sabías que...?", "Nunca creerás...", "Esto cambió mi vida..."
+
+**[3-15 SEG] SETUP (PLANTEAMIENTO):**
+- Presenta contexto rápido
+- Establece protagonista/situación
+- Promesa de valor (qué aprenderán/verán)
+
+**[15-45 SEG] DESARROLLO:**
+- Clímax, transformación, o enseñanza principal
+- Máximo 3 puntos/momentos clave
+- Visual > Diálogo (subtítulos obligatorios)
+
+**[45-55 SEG] RESOLUCIÓN/PAYOFF:**
+- Conclusión satisfactoria
+- Twist, lección aprendida, o resultado
+
+**[55-60 SEG] CTA (CALL TO ACTION):**
+- "Sigue para más", "Parte 2 en comentarios", "¿Tú qué harías?"
+- Engagement explícito
+
+---
+
+**FORMATO DE OUTPUT:**
+```
+=== YOUTUBE SHORT SCRIPT ===
+
+TÍTULO: [Título pegajoso, max 60 caracteres]
+DURACIÓN: 60 segundos
+FORMATO: Vertical 9:16
+
+---
+
+[00:00-00:03] HOOK
+VISUAL: [Descripción detallada del primer frame]
+AUDIO: [Música inicial + primer texto/diálogo]
+TEXTO EN PANTALLA: "[Texto grande que aparece]"
+
+[00:03-00:15] SETUP  
+VISUAL: [Qué se ve]
+AUDIO: [Voice over o música]
+TEXTO EN PANTALLA: "[Si aplica]"
+
+[00:15-00:45] DESARROLLO
+VISUAL: [Secuencia de shots]
+AUDIO: [Diálogo/narración]
+TRANSICIONES: [Jumpcuts, zooms, etc]
+
+[00:45-00:55] RESOLUCIÓN
+VISUAL: [Clímax visual]
+AUDIO: [Payoff sonoro]
+
+[00:55-00:60] CTA
+VISUAL: [Texto final + logo/branding]
+AUDIO: [Música fade out]
+TEXTO: "SÍGUEME PARA MÁS ⬆️"
+
+---
+
+MÚSICA SUGERIDA: [Género/mood]
+HASHTAGS: #Short #[tema] #[tema] #[tema]
+THUMBNAIL: [Descripción del frame para miniatura]
+```
+
+**REGLAS CRÍTICAS:**
+- SIN tiempos muertos
+- Subtítulos en TODAS las palabras habladas
+- Jumpcut cada 2-3 segundos
+- Música alta energía
+- Colores saturados, alto contraste

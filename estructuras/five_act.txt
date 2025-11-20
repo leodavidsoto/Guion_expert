@@ -1,0 +1,242 @@
+# FIVE ACT STRUCTURE - William Shakespeare
+
+Estructura clásica usada en teatro y tragedia.
+
+## ESTRUCTURA GENERAL
+```
+        CLIMAX (Acto III)
+           /\
+          /  \
+         /    \
+  Rising/      \Falling
+  Action        Action
+       /          \
+      /            \
+ACTO I              \
+Exposition        ACTO V
+                Resolution
+```
+
+---
+
+## ACTO I: EXPOSITION (Exposición)
+
+**Páginas: 1-20 (de 100-120)**
+
+**Función:**
+- Presentar personajes principales
+- Establecer escenario y atmósfera
+- Plantear conflicto inicial
+- Generar preguntas en la audiencia
+
+**Elementos:**
+- Mundo en equilibrio (o ya roto)
+- Incidente incitante sutil
+- Stakes iniciales establecidos
+- Foreshadowing del conflicto mayor
+
+**Ejemplo - Hamlet:**
+- Aparición del fantasma
+- Presentación de Hamlet en luto
+- Matrimonio de Gertrudis y Claudio
+
+---
+
+## ACTO II: RISING ACTION (Acción Creciente)
+
+**Páginas: 20-45**
+
+**Función:**
+- Complicar la situación
+- Intensificar el conflicto
+- Desarrollar personajes
+- Obstáculos crecientes
+
+**Elementos:**
+- Protagonista toma acción
+- Aparición de antagonistas
+- Alianzas se forman
+- Primeras victorias y derrotas
+
+**Ejemplo - Hamlet:**
+- Hamlet conoce al fantasma
+- Planea fingir locura
+- "The play's the thing"
+- Confirma culpa de Claudio
+
+---
+
+## ACTO III: CLIMAX (Clímax)
+
+**Páginas: 45-60**
+
+**Función:**
+- Punto de máxima tensión
+- Turning point de la historia
+- Momento de verdad para el protagonista
+- Todo cambia irreversiblemente
+
+**Elementos:**
+- Confrontación directa
+- Revelación importante
+- Decisión crucial
+- Punto de no retorno
+
+**Características:**
+- En tragedia: protagonista comete error fatal
+- En comedia: malentendido se revela
+- En drama: verdad sale a luz
+
+**Ejemplo - Hamlet:**
+- "To be or not to be"
+- Hamlet mata a Polonius
+- Rechaza a Ofelia
+- Confronta a Gertrudis
+
+---
+
+## ACTO IV: FALLING ACTION (Acción Descendente)
+
+**Páginas: 60-90**
+
+**Función:**
+- Mostrar consecuencias del clímax
+- Desarrollar subtramas
+- Preparar para el desenlace
+- Pueden haber reversals (giros menores)
+
+**Elementos:**
+- Complicaciones por las acciones del Acto III
+- Fuerzas antagónicas reaccionan
+- Protagonista enfrenta consecuencias
+- Tensión hacia la resolución
+
+**Nota:** 
+En tragedia: descenso hacia la catástrofe
+En comedia: resolución de malentendidos
+
+**Ejemplo - Hamlet:**
+- Hamlet es enviado a Inglaterra
+- Locura y muerte de Ofelia
+- Regreso de Laertes con sed de venganza
+- Hamlet regresa de Inglaterra
+
+---
+
+## ACTO V: DÉNOUEMENT (Desenlace)
+
+**Páginas: 90-120**
+
+**Función:**
+- Resolución de todos los conflictos
+- Catarsis o liberación emocional
+- Restauración del orden (o nuevo orden)
+- Cierre de todas las tramas
+
+**Elementos:**
+- Confrontación final
+- Revelaciones finales
+- Destino de todos los personajes
+- Nueva normalidad establecida
+
+**En Tragedia:**
+- Muerte del protagonista
+- Lecciones aprendidas por supervivientes
+- Restauración del orden moral
+
+**En Comedia:**
+- Matrimonios y reconciliaciones
+- Malentendidos aclarados
+- Celebración final
+
+**Ejemplo - Hamlet:**
+- Duelo de Hamlet vs Laertes
+- Muertes de Gertrudis, Laertes, Claudio, Hamlet
+- Fortinbras restaura el orden
+- Horatio cuenta la historia
+
+---
+
+## TIMING DETALLADO
+
+**120 páginas total:**
+- Acto I: 20 páginas (17%)
+- Acto II: 25 páginas (21%)
+- Acto III: 15 páginas (13%) - El más corto pero más intenso
+- Acto IV: 30 páginas (25%)
+- Acto V: 30 páginas (25%)
+
+**Alternativa balanceada:**
+- Cada acto: 24 páginas (20% cada uno)
+
+---
+
+## VARIACIONES POR GÉNERO
+
+**TRAGEDIA (Romeo y Julieta, Hamlet, Macbeth):**
+- Acto I: Conflicto se planta
+- Acto II: Acción apasionada
+- Acto III: Punto de no retorno (error fatal)
+- Acto IV: Espiral descendente
+- Acto V: Catástrofe y muerte
+
+**COMEDIA (Sueño de una Noche de Verano, Mucho Ruido):**
+- Acto I: Situación confusa establecida
+- Acto II: Malentendidos se complican
+- Acto III: Caos máximo
+- Acto IV: Revelaciones parciales
+- Acto V: Todo se aclara, bodas
+
+**DRAMA HISTÓRICO (Julio César, Enrique V):**
+- Acto I: Situación política
+- Acto II: Intriga y conspiración
+- Acto III: Golpe de estado o batalla
+- Acto IV: Consecuencias políticas
+- Acto V: Nuevo orden establecido
+
+---
+
+## PRINCIPIOS SHAKESPEARIANOS
+
+**1. Subplot Mirrors Main Plot:**
+- La subtrama refleja o contrasta la trama principal
+- En King Lear: Lear y Gloucester, ambos traicionados por hijos
+
+**2. Comic Relief:**
+- Momentos de humor en tragedia
+- Romper tensión pero profundizar tema
+- Porter scene en Macbeth
+
+**3. Soliloquies:**
+- Revelan pensamientos internos
+- Avanzan trama emocionalmente
+- "To be or not to be"
+
+**4. Reversals (Peripeteia):**
+- Cambios de fortuna súbitos
+- De bueno a malo o viceversa
+- Múltiples a lo largo de la obra
+
+**5. Recognition (Anagnorisis):**
+- Momento de descubrimiento
+- Personaje ve la verdad
+- Generalmente en Acto V
+
+---
+
+## APLICACIÓN MODERNA
+
+**BREAKING BAD:**
+- Temporada como Acto
+- 5 temporadas = 5 actos
+- Temp 3 (Clímax): "I am the one who knocks"
+- Temp 4-5: Falling action y resolución
+
+**GAME OF THRONES:**
+- Cada temporada sigue estructura de 5 actos
+- Episodio 9 tradicionalmente el clímax
+
+**PELÍCULAS:**
+- Se puede usar en lugar de 3 actos
+- Más detalle en desarrollo
+- Better pacing para historias complejas

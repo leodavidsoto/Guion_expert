@@ -1,0 +1,425 @@
+{
+  "classic_hollywood": {
+    "SAVE_THE_CAT": {
+      "name": "Save The Cat (15 Beats)",
+      "author": "Blake Snyder",
+      "beats": 15,
+      "duration": "90-120 min",
+      "best_for": "Drama, Comedia, Romance",
+      "description": "Fórmula comercial probada para transformación personal",
+      "difficulty": "Media"
+    },
+    "THREE_ACT": {
+      "name": "Three Act Structure",
+      "author": "Syd Field",
+      "beats": 3,
+      "duration": "90-120 min",
+      "best_for": "Cualquier género",
+      "description": "Estructura clásica universal de Hollywood",
+      "difficulty": "Fácil"
+    },
+    "FOUR_ACT": {
+      "name": "Four Act Structure",
+      "author": "TV Moderna",
+      "beats": 4,
+      "duration": "42-60 min",
+      "best_for": "TV Drama, Streaming",
+      "description": "División del Acto II para TV moderna",
+      "difficulty": "Fácil"
+    },
+    "FIVE_ACT": {
+      "name": "Five Act Structure",
+      "author": "Shakespeare / Freytag",
+      "beats": 5,
+      "duration": "90-150 min",
+      "best_for": "Tragedia, Drama",
+      "description": "Estructura teatral clásica con ascenso y caída",
+      "difficulty": "Alta"
+    },
+    "SEVEN_POINT": {
+      "name": "Seven Point Story",
+      "author": "Dan Wells",
+      "beats": 7,
+      "duration": "90-120 min",
+      "best_for": "Fantasía, Sci-Fi",
+      "description": "Enfocada en arcos de personaje y giros dramáticos",
+      "difficulty": "Media"
+    },
+    "SEQUENCE": {
+      "name": "Sequence Approach (8 Secuencias)",
+      "author": "Paul Gulino",
+      "beats": 8,
+      "duration": "90-120 min",
+      "best_for": "Acción, Thriller",
+      "description": "8 mini-películas de 10-15 minutos cada una",
+      "difficulty": "Media-Alta"
+    },
+    "TRUBY_22": {
+      "name": "22 Steps Structure",
+      "author": "John Truby",
+      "beats": 22,
+      "duration": "90-150 min",
+      "best_for": "Drama complejo",
+      "description": "Estructura detallada enfocada en desarrollo de personaje",
+      "difficulty": "Muy Alta"
+    }
+  },
+  "mythic_journey": {
+    "HERO_JOURNEY": {
+      "name": "Hero's Journey (12 Etapas)",
+      "author": "Joseph Campbell",
+      "beats": 12,
+      "duration": "90-180 min",
+      "best_for": "Fantasía, Aventura, Sci-Fi",
+      "description": "Estructura mítica universal para aventuras épicas",
+      "difficulty": "Alta"
+    },
+    "VIRGIN_PROMISE": {
+      "name": "The Virgin's Promise (13 Etapas)",
+      "author": "Kim Hudson",
+      "beats": 13,
+      "duration": "90-120 min",
+      "best_for": "Coming-of-age, Romance",
+      "description": "Contraparte del viaje del héroe, auto-realización",
+      "difficulty": "Alta"
+    },
+    "WRITERS_JOURNEY": {
+      "name": "The Writer's Journey",
+      "author": "Christopher Vogler",
+      "beats": 12,
+      "duration": "90-150 min",
+      "best_for": "Aventura, Drama",
+      "description": "Adaptación moderna del viaje del héroe para Hollywood",
+      "difficulty": "Media-Alta"
+    }
+  },
+  "episodic_tv": {
+    "STORY_CIRCLE": {
+      "name": "Story Circle (8 Pasos)",
+      "author": "Dan Harmon",
+      "beats": 8,
+      "duration": "20-60 min",
+      "best_for": "Series TV, Episodios",
+      "description": "Simplificación del viaje del héroe para episodios",
+      "difficulty": "Fácil"
+    },
+    "TEASER_4_ACT": {
+      "name": "Teaser + 4 Actos (TV Drama)",
+      "author": "TV Moderna",
+      "beats": 5,
+      "duration": "42-60 min",
+      "best_for": "Series dramáticas",
+      "description": "Estructura con teaser y 4 actos separados por comerciales",
+      "difficulty": "Media"
+    },
+    "COLD_OPEN": {
+      "name": "Cold Open + 3 Actos",
+      "author": "TV Comedia",
+      "beats": 4,
+      "duration": "22-30 min",
+      "best_for": "Sitcoms, Comedia",
+      "description": "Escena fría antes de créditos + 3 actos",
+      "difficulty": "Fácil"
+    },
+    "ABC_STORY": {
+      "name": "A-B-C Story Structure",
+      "author": "Multi-plot TV",
+      "beats": 3,
+      "duration": "22-60 min",
+      "best_for": "Comedias multi-trama",
+      "description": "Tres tramas paralelas que se entrelazan",
+      "difficulty": "Media"
+    },
+    "PROCEDURAL": {
+      "name": "Procedural Structure",
+      "author": "TV Procedimental",
+      "beats": 6,
+      "duration": "42-60 min",
+      "best_for": "Policiales, Médicos",
+      "description": "Caso de la semana + arco serializado",
+      "difficulty": "Media"
+    }
+  },
+  "non_linear": {
+    "IN_MEDIA_RES": {
+      "name": "In Media Res",
+      "author": "Tradición clásica",
+      "beats": 8,
+      "duration": "90-120 min",
+      "best_for": "Thriller, Misterio",
+      "description": "Comienza en medio de la acción con flashbacks",
+      "difficulty": "Alta"
+    },
+    "FRACTURED": {
+      "name": "Narrativa Fracturada",
+      "author": "Varios (Pulp Fiction)",
+      "beats": 6,
+      "duration": "90-150 min",
+      "best_for": "Arte, Experimental",
+      "description": "Múltiples líneas temporales entrelazadas",
+      "difficulty": "Muy Alta"
+    },
+    "RASHOMON": {
+      "name": "Estructura Rashomon",
+      "author": "Akira Kurosawa",
+      "beats": 5,
+      "duration": "90-120 min",
+      "best_for": "Drama, Misterio",
+      "description": "Mismo evento desde múltiples perspectivas",
+      "difficulty": "Muy Alta"
+    },
+    "REVERSE": {
+      "name": "Cronología Inversa",
+      "author": "Varios (Memento)",
+      "beats": 8,
+      "duration": "90-120 min",
+      "best_for": "Thriller psicológico",
+      "description": "Historia contada de atrás hacia adelante",
+      "difficulty": "Muy Alta"
+    },
+    "PARALLEL": {
+      "name": "Narrativas Paralelas",
+      "author": "Varios",
+      "beats": 6,
+      "duration": "90-150 min",
+      "best_for": "Drama, Épico",
+      "description": "Dos o más historias paralelas que convergen",
+      "difficulty": "Alta"
+    },
+    "FRAME_NARRATIVE": {
+      "name": "Frame Narrative",
+      "author": "Tradición literaria",
+      "beats": 5,
+      "duration": "90-120 min",
+      "best_for": "Drama, Aventura",
+      "description": "Historia marco que contiene historia principal",
+      "difficulty": "Media-Alta"
+    }
+  },
+  "international": {
+    "KISHOTENKETSU": {
+      "name": "Kishōtenketsu (4 Actos)",
+      "author": "Tradición asiática",
+      "beats": 4,
+      "duration": "Variable",
+      "best_for": "Drama contemplativo, Anime",
+      "description": "Estructura sin conflicto central, énfasis en armonía",
+      "difficulty": "Alta"
+    },
+    "BOLLYWOOD": {
+      "name": "Masala (Bollywood)",
+      "author": "Cine Hindi",
+      "beats": 6,
+      "duration": "150-180 min",
+      "best_for": "Musical, Romance épico",
+      "description": "Mezcla de géneros con números musicales",
+      "difficulty": "Media"
+    },
+    "THREE_KINGDOMS": {
+      "name": "Three Kingdoms Structure",
+      "author": "Literatura china",
+      "beats": 7,
+      "duration": "120-180 min",
+      "best_for": "Épico, Guerra",
+      "description": "Estructura épica china con múltiples facciones",
+      "difficulty": "Muy Alta"
+    },
+    "NOURYOKU": {
+      "name": "Nouryoku Structure",
+      "author": "Anime/Manga",
+      "beats": 5,
+      "duration": "Variable",
+      "best_for": "Shonen, Acción",
+      "description": "Desarrollo de poderes y entrenamiento",
+      "difficulty": "Media"
+    }
+  },
+  "experimental": {
+    "FICHTEAN": {
+      "name": "Curva Fichtean",
+      "author": "Gustav Freytag",
+      "beats": 6,
+      "duration": "Variable",
+      "best_for": "Acción, Thriller",
+      "description": "Serie de crisis ascendentes sin setup tradicional",
+      "difficulty": "Media"
+    },
+    "W_PLOT": {
+      "name": "The W Plot",
+      "author": "Romance",
+      "beats": 5,
+      "duration": "90-120 min",
+      "best_for": "Romance, Rom-com",
+      "description": "Dos arcos que convergen en unión romántica",
+      "difficulty": "Media"
+    },
+    "NESTED_LOOPS": {
+      "name": "Círculos Concéntricos",
+      "author": "Varios",
+      "beats": 5,
+      "duration": "Variable",
+      "best_for": "Fantasía, Sci-Fi",
+      "description": "Historias dentro de historias como muñecas rusas",
+      "difficulty": "Muy Alta"
+    },
+    "VIGNETTE": {
+      "name": "Antología de Viñetas",
+      "author": "Varios",
+      "beats": 5,
+      "duration": "90-150 min",
+      "best_for": "Drama coral, Comedia",
+      "description": "Múltiples historias cortas conectadas temáticamente",
+      "difficulty": "Alta"
+    },
+    "CIRCULAR": {
+      "name": "Narrativa Circular",
+      "author": "Varios",
+      "beats": 4,
+      "duration": "90-120 min",
+      "best_for": "Filosófico, Drama",
+      "description": "Final conecta con el principio, loop perfecto",
+      "difficulty": "Alta"
+    },
+    "EPISODIC_ANTHOLOGY": {
+      "name": "Episodic Anthology",
+      "author": "Black Mirror style",
+      "beats": 3,
+      "duration": "45-90 min",
+      "best_for": "Antología, Sci-Fi",
+      "description": "Episodios independientes con tema común",
+      "difficulty": "Media"
+    },
+    "STREAM_CONSCIOUSNESS": {
+      "name": "Stream of Consciousness",
+      "author": "Modernismo literario",
+      "beats": 0,
+      "duration": "Variable",
+      "best_for": "Experimental, Arte",
+      "description": "Flujo mental sin estructura tradicional",
+      "difficulty": "Muy Alta"
+    },
+    "HYPERLINK": {
+      "name": "Hyperlink Cinema",
+      "author": "Varios (Cloud Atlas)",
+      "beats": 8,
+      "duration": "120-180 min",
+      "best_for": "Drama épico",
+      "description": "Múltiples historias conectadas por tema",
+      "difficulty": "Muy Alta"
+    }
+  },
+  "short_form": {
+    "SIMPLE": {
+      "name": "Estructura Simple",
+      "author": "Redes sociales",
+      "beats": 4,
+      "duration": "15-180s",
+      "best_for": "Shorts, Reels, TikTok",
+      "description": "Hook → Setup → Desarrollo → Payoff",
+      "difficulty": "Muy Fácil"
+    },
+    "PROBLEMA_SOLUCION": {
+      "name": "Problema-Solución (PAS)",
+      "author": "Marketing",
+      "beats": 3,
+      "duration": "30-90s",
+      "best_for": "Ads, Explainers",
+      "description": "Presenta problema, agita, ofrece solución",
+      "difficulty": "Muy Fácil"
+    },
+    "ANTES_DESPUES": {
+      "name": "Antes/Después",
+      "author": "Marketing",
+      "beats": 2,
+      "duration": "15-60s",
+      "best_for": "Testimoniales, Productos",
+      "description": "Muestra transformación dramática",
+      "difficulty": "Muy Fácil"
+    },
+    "AIDA": {
+      "name": "AIDA Structure",
+      "author": "Marketing clásico",
+      "beats": 4,
+      "duration": "30-90s",
+      "best_for": "Comerciales, Ventas",
+      "description": "Attention-Interest-Desire-Action",
+      "difficulty": "Fácil"
+    }
+  },
+  "documentary": {
+    "EXPOSITORY": {
+      "name": "Expositivo",
+      "author": "Documental clásico",
+      "beats": 5,
+      "duration": "60-90 min",
+      "best_for": "Documental educativo",
+      "description": "Narrador omnisciente presenta información objetiva",
+      "difficulty": "Fácil"
+    },
+    "OBSERVATIONAL": {
+      "name": "Observacional",
+      "author": "Cinéma Vérité",
+      "beats": 4,
+      "duration": "Variable",
+      "best_for": "Documental fly-on-wall",
+      "description": "Observación sin intervención ni narración",
+      "difficulty": "Alta"
+    },
+    "PERSONAL_ESSAY": {
+      "name": "Ensayo Personal",
+      "author": "Documental moderno",
+      "beats": 4,
+      "duration": "60-120 min",
+      "best_for": "Documental reflexivo",
+      "description": "Perspectiva personal y subjetiva del realizador",
+      "difficulty": "Media"
+    },
+    "PARTICIPATORY": {
+      "name": "Participativo",
+      "author": "Documental interactivo",
+      "beats": 5,
+      "duration": "60-120 min",
+      "best_for": "Investigación, Social",
+      "description": "Realizador interactúa directamente con sujetos",
+      "difficulty": "Media"
+    },
+    "PERFORMATIVE": {
+      "name": "Performativo",
+      "author": "Documental auto-reflexivo",
+      "beats": 4,
+      "duration": "60-90 min",
+      "best_for": "Experimental, Personal",
+      "description": "Énfasis en experiencia subjetiva y performatividad",
+      "difficulty": "Alta"
+    }
+  },
+  "theatre_performance": {
+    "WELL_MADE_PLAY": {
+      "name": "Well-Made Play",
+      "author": "Eugène Scribe",
+      "beats": 7,
+      "duration": "90-120 min",
+      "best_for": "Teatro francés, Drama",
+      "description": "Exposición-complicación-crisis-climax-denouement",
+      "difficulty": "Media-Alta"
+    },
+    "ABSURDIST": {
+      "name": "Absurdist Structure",
+      "author": "Teatro del absurdo",
+      "beats": 0,
+      "duration": "60-90 min",
+      "best_for": "Experimental, Filosófico",
+      "description": "Sin progresión lógica, enfatiza lo absurdo",
+      "difficulty": "Muy Alta"
+    },
+    "EPIC_THEATRE": {
+      "name": "Epic Theatre",
+      "author": "Bertolt Brecht",
+      "beats": 10,
+      "duration": "120-180 min",
+      "best_for": "Político, Social",
+      "description": "Episódico con distanciamiento brechtiano",
+      "difficulty": "Muy Alta"
+    }
+  }
+}

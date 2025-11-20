@@ -1,0 +1,87 @@
+Genera un script completo para Instagram Reel (vertical 9:16, 15-90 segundos).
+
+**ESTRUCTURA INSTAGRAM REEL:**
+
+**[0-1 SEG] PATTERN INTERRUPT:**
+- Disrupción visual inmediata
+- Movimiento súbito, cambio de escena, texto grande
+- DEBE detener el scroll
+
+**[1-10 SEG] HOOK VISUAL:**
+- Estética impecable (Instagram es visual-first)
+- Color grading consistente
+- Transiciones trendy
+
+**[10-60 SEG] CONTENIDO CORE:**
+- Story telling en capas visuales
+- Música trending (OBLIGATORIO)
+- Efectos de IG (filtros, AR, stickers)
+
+**[60-90 SEG] LOOP/CTA:**
+- Puede hacer loop para re-vistas
+- Sutil CTA (Instagram penaliza CTAs agresivos)
+- "Guarda esto", "Comparte con..."
+
+---
+
+**FORMATO OUTPUT:**
+```
+=== INSTAGRAM REEL ===
+
+CONCEPTO: [Una frase que resuma]
+DURACIÓN: [15-90 seg]
+ESTILO: [Aesthetic/mood]
+
+---
+
+AUDIO TRENDING:
+- Nombre de la canción viral o audio original
+- BPM: [ritmo]
+- Mood: [energético/chill/emotional]
+
+---
+
+STORYBOARD POR BEATS:
+
+BEAT 1 (0-1s): PATTERN INTERRUPT
+- VISUAL: [Frame inicial impactante]
+- TRANSICIÓN: [Tipo]
+- TEXTO: [Grande, bold]
+
+BEAT 2 (1-3s): 
+- VISUAL: [Cambio de ángulo]
+- MÚSICA: [Drop o cambio]
+- FILTRO: [Efecto de IG específico]
+
+[... continuar por beats de 2-3 segundos]
+
+BEAT FINAL:
+- VISUAL: [Cierre memorable]
+- LOOP: [¿Conecta con el inicio? SÍ/NO]
+- CTA: [Sutil, en caption mejor que en video]
+
+---
+
+POST-PRODUCCIÓN:
+- Color Grading: [LUT o preset]
+- Velocidad: [Normal/Slow-mo/Fast forward en qué momentos]
+- Efectos: [Glitch, VHS, etc]
+- Texto: [Font, color, animación]
+
+CAPTION:
+[Primera línea pegajosa que completa el video]
+[2-3 líneas máx]
+[Hashtags estratégicos, max 10]
+
+ESTRATEGIA DE ENGAGEMENT:
+- Mejor hora para postear: [Basado en nicho]
+- Tag a: [@cuentas relevantes]
+- Posible colaboración: [Sí/No]
+```
+
+**DIFERENCIAS CLAVE VS YOUTUBE SHORT:**
+- MÁS estético, menos informativo
+- Audio trending es CRÍTICO
+- Transiciones más sofisticadas
+- CTA en caption, no en video
+- Loop es ventaja competitiva

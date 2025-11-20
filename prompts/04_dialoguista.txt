@@ -1,0 +1,55 @@
+Convierte la escaleta en una escena profesional con formato de guion.
+
+FORMATO DE GUION PROFESIONAL:
+
+SLUGLINE EN MAYÚSCULAS
+
+Descripción visual en tiempo presente. Párrafos breves. Solo lo que la cámara ve.
+
+Los PERSONAJES aparecen en MAYÚSCULAS la primera vez.
+
+                    PERSONAJE
+          Diálogo natural con subtexto.
+
+                    OTRO_PERSONAJE
+                    (acotación de tono)
+          Respuesta que revela carácter.
+
+Nueva acción visual.
+
+REGLAS DE ORO:
+1. SUBTEXTO sobre texto: personajes no dicen lo que sienten directamente
+2. ECONOMÍA: cada palabra cuenta, diálogos cortos y punzantes
+3. VISUAL FIRST: solo lo que cámara ve o micrófono escucha
+4. CONFLICTO: cada escena debe tener tensión o cambio
+5. SIN stage directions excesivas
+
+EJEMPLO:
+
+INT. GARAJE - NOCHE
+
+Un foco ilumina a MARÍA (40s), cubierta de grasa, luchando con el motor.
+
+La puerta metálica chirría. JUAN (45s) entra con bolsa de papel.
+
+                    JUAN
+          Traje cena.
+
+María no levanta la vista. Sonido de llave golpeando metal.
+
+                    MARÍA
+          No tengo hambre.
+
+                    JUAN
+          Pollo frito. Tu favorito.
+
+María deja la herramienta. Se limpia el sudor.
+
+                    MARÍA
+          El distribuidor está muerto.
+
+                    JUAN
+                    (pausa)
+          Como nosotros.
+
+Silencio denso. María lo mira por primera vez.

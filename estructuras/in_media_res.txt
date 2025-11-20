@@ -1,0 +1,278 @@
+# IN MEDIA RES - Empezando en Medio de la Acción
+
+Técnica narrativa que empieza la historia en un punto crucial, luego retrocede.
+
+## DEFINICIÓN
+
+**In Media Res** (latín: "en medio de las cosas")
+- Comenzar en el clímax o cerca de él
+- Luego retroceder para explicar cómo se llegó ahí
+- Engancha inmediatamente a la audiencia
+
+---
+
+## ESTRUCTURA TÍPICA
+```
+INICIO (pág 1-10)
+↓
+MOMENTO CRUCIAL/CLIMÁTICO
+↓
+FLASHBACK (pág 10-70)
+↓
+"3 días antes..."
+Desarrollo completo de la historia
+↓
+REGRESO AL PRESENTE (pág 70-90)
+↓
+Resolución del momento inicial
+↓
+CONCLUSIÓN (pág 90-100)
+```
+
+---
+
+## VARIANTES
+
+### **1. COLD OPEN + FLASHBACK TOTAL**
+
+**Estructura:**
+1. Escena impactante (5-10 pág)
+2. "24 horas antes" o "3 meses antes"
+3. Historia lineal hasta alcanzar momento inicial
+4. Continuación y resolución
+
+**Ejemplos:**
+- *Fight Club:* Comienza con arma en boca
+- *Memento:* Empieza con asesinato, retrocede
+- *The Usual Suspects:* Interrogatorio como marco
+
+**Timing:**
+- Cold open: 5-10 páginas
+- Flashback: 60-70 páginas
+- Regreso y resolución: 20-30 páginas
+
+---
+
+### **2. ESTRUCTURA ENTRELAZADA**
+
+**Estructura:**
+1. Escena del "presente" intenso
+2. Flashback a momento clave del pasado
+3. Regreso al presente (avanza un poco)
+4. Otro flashback (cronológicamente posterior al anterior)
+5. Repetir hasta que ambas líneas convergen
+
+**Ejemplos:**
+- *The Godfather Part II:* Vito joven / Michael presente
+- *Dunkirk:* Tres líneas temporales entrelazadas
+- *Arrival:* Flashbacks que resultan ser flash-forwards
+
+**Timing:**
+- Alternar cada 10-15 páginas
+- Cada regreso al presente debe avanzar la tensión
+- Converger en página 80-90
+
+---
+
+### **3. PRÓLOGO + HISTORIA LINEAL**
+
+**Estructura:**
+1. Prólogo impactante (futuro lejano)
+2. "10 años antes..."
+3. Historia contada linealmente
+4. Clímax conecta con el prólogo
+5. Epílogo corto
+
+**Ejemplos:**
+- *The Social Network:* Deposición como marco
+- *Titanic:* Vieja Rose como marco narrativo
+- *American Beauty:* "En menos de un año estaré muerto"
+
+**Timing:**
+- Prólogo: 2-5 páginas
+- Historia lineal: 80-90 páginas
+- Conexión/epílogo: 5-10 páginas
+
+---
+
+### **4. RASHOMON (Múltiples Perspectivas)**
+
+**Estructura:**
+1. Evento central mostrado
+2. Versión del personaje A
+3. Mismo evento, versión del personaje B
+4. Mismo evento, versión del personaje C
+5. Revelación de la verdad (o ambigüedad permanente)
+
+**Ejemplos:**
+- *Rashomon:* 4 versiones de un asesinato
+- *Knives Out:* Múltiples testimonios del crimen
+- *Gone Girl:* Perspectiva de Nick vs Amy
+
+---
+
+## VENTAJAS
+
+✅ **Gancho inmediato:**
+- Engancha en primeras páginas
+- Audiencia hace preguntas inmediatamente
+- "¿Cómo llegó aquí?" genera suspense
+
+✅ **Evita exposición lenta:**
+- No necesitas 30 páginas de setup
+- La acción justifica la exposición posterior
+
+✅ **Control de información:**
+- Revelas información estratégicamente
+- Creas misterio y tensión
+- Manejas sorpresas y revelaciones
+
+✅ **Recontextualiza escenas:**
+- Lo que parecía obvio cobra nuevo significado
+- Ironía dramática potenciada
+
+---
+
+## DESVENTAJAS Y RIESGOS
+
+❌ **Confusión:**
+- Audiencia puede perderse si no está clara la cronología
+- Demasiados saltos temporales cansan
+
+❌ **Spoilers:**
+- Mostrar el final puede quitar tensión
+- Solo funciona si el "cómo" es más interesante que el "qué"
+
+❌ **Dificultad de ejecución:**
+- Requiere planificación meticulosa
+- Cada flashback debe justificar su existencia
+
+❌ **Desgaste de la técnica:**
+- Sobreusada puede parecer gimmick
+- Debe servir a la historia, no ser solo estilística
+
+---
+
+## TÉCNICAS PARA EJECUTAR BIEN
+
+### **1. MARCAR CLARAMENTE LOS SALTOS TEMPORALES**
+```
+FADE OUT.
+
+TITLE CARD: "3 DÍAS ANTES"
+
+FADE IN:
+```
+
+O usar indicadores visuales:
+- Cambio de color (sepia para pasado)
+- Diferencia en vestuario/peinado
+- Superimposición de fecha
+
+### **2. HACER QUE CADA FLASHBACK RESPONDA UNA PREGUNTA**
+
+**Malo:**
+- Flashback genérico de backstory
+- Información que podría darse en diálogo
+
+**Bueno:**
+- Flashback revela por qué el personaje actúa así
+- Muestra evento clave que explica decisión crucial
+
+### **3. AUMENTAR TENSIÓN EN CADA REGRESO AL PRESENTE**
+
+Cada vez que vuelves al "ahora", la situación debe empeorar o complicarse.
+
+**Estructura de tensión:**
+```
+Presente 1: Protagonista en peligro inmediato (tensión 8/10)
+Flashback 1: Cómo llegó aquí (build-up)
+Presente 2: Peligro aumenta (tensión 9/10)
+Flashback 2: Revelación que cambia contexto
+Presente 3: Clímax (tensión 10/10)
+```
+
+### **4. CONVERGENCIA SATISFACTORIA**
+
+El momento donde el flashback alcanza al presente debe ser:
+- Gratificante (payoff de preguntas planteadas)
+- Sorprendente (recontextualiza lo visto)
+- Lógico (inevitable en retrospectiva)
+
+---
+
+## EJEMPLOS ANALIZADOS
+
+### **BREAKING BAD - "Pilot"**
+```
+[PRESENTE] Pantalones volando, RV en el desierto
+[FLASHBACK] "3 semanas antes..."
+[HISTORIA LINEAL] Cómo Walt llegó a cocinar metanfetaminas
+[REGRESO AL PRESENTE] Continúa desde escena inicial
+[RESOLUCIÓN] Crash del RV, sirenas acercándose
+```
+
+**Por qué funciona:**
+- Cold open increíble (pantalones volando es icónico)
+- Preguntas inmediatas: ¿Quién es? ¿Por qué está en calzoncillos?
+- Flashback justifica todo
+- Payoff satisfactorio
+
+### **PULP FICTION - Estructura no-lineal**
+```
+[PRÓLOGO] Pumpkin y Honey Bunny
+[HISTORIA VINCENT & JULES] (cronológicamente segunda)
+[HISTORIA BUTCH] (cronológicamente tercera)
+[HISTORIA VINCENT & JULES pt. 2] (cronológicamente primera)
+[EPÍLOGO] Regreso a Pumpkin y Honey Bunny
+```
+
+**Por qué funciona:**
+- Cada segmento es autocontenido
+- Pero todos se entrelazan
+- Ver a Vincent vivo después de su muerte es impactante
+- El orden temático supera el cronológico
+
+---
+
+## CUÁNDO USAR IN MEDIA RES
+
+✅ **USA si:**
+- Tu historia tiene un setup lento pero clímax espectacular
+- Hay misterio importante sobre cómo se llegó a la situación
+- El viaje es más interesante que el destino
+- Quieres controlar revelación de información
+- Necesitas gancho inmediato
+
+❌ **NO USES si:**
+- La historia es simple y lineal funciona mejor
+- No tienes un momento inicial lo suficientemente fuerte
+- El misterio no es tan interesante
+- Solo lo haces por estar "de moda"
+- Complica innecesariamente una historia clara
+
+---
+
+## EJERCICIO DE ESCRITURA
+
+Toma cualquier historia lineal y reestructúrala in media res:
+
+**Original lineal:**
+1. Personaje en vida normal
+2. Incidente que cambia todo
+3. Decisiones cada vez peores
+4. Clímax en situación extrema
+5. Resolución
+
+**In Media Res:**
+1. EMPIEZA en el clímax (punto 4)
+2. "¿Cómo llegó aquí?"
+3. Flashback a vida normal
+4. Muestra decisiones
+5. Alcanza el momento inicial
+6. Resuelve
+
+**Pregúntate:**
+- ¿La versión in media res es más interesante?
+- ¿Genera más preguntas?
+- ¿El misterio justifica la complejidad?

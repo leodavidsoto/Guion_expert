@@ -1,0 +1,20 @@
+# TEMPLATE: VIDEOCLIP MUSICAL
+
+ESTRUCTURA SUGERIDA:
+- 8 escenas
+- Duración: 3-4 minutos
+- Énfasis visual alto
+- Sincronización musical
+
+BEATS CLAVE:
+1. Intro impactante (0:00-0:15)
+2. Primer verso (0:15-0:45)
+3. Pre-coro build-up (0:45-1:00)
+4. Coro explosivo (1:00-1:30)
+5. Segundo verso variante (1:30-2:00)
+6. Puente emotivo (2:00-2:30)
+7. Coro final potenciado (2:30-3:00)
+8. Outro memorable (3:00-3:30)
+
+EJEMPLO DE PROMPT:
+"videoclip musical de [género] donde [banda/artista] [concepto visual único]"

@@ -1,0 +1,106 @@
+Estructura la narrativa usando SAVE THE CAT (15 Beats de Blake Snyder).
+
+Genera beat points DETALLADOS para cada uno de los 15 beats:
+
+## ACTO I (Páginas 1-25)
+
+**1. OPENING IMAGE (Página 1)**
+[Describe la imagen inicial que muestra el "antes" del protagonista]
+- Qué vemos
+- Estado emocional del protagonista
+- Mundo ordinario
+
+**2. THEME STATED (Página 5)**
+[La pregunta o declaración que plantea el tema de la historia]
+- Quién lo dice (generalmente personaje secundario)
+- Frase exacta o concepto
+- Por qué el protagonista no lo entiende aún
+
+**3. SET-UP (Páginas 1-10)**
+[Presentación del mundo y personajes]
+- Protagonista: quién es, qué le falta (need vs want)
+- Personajes secundarios clave
+- Situación actual y status quo
+
+**4. CATALYST (Página 12)**
+[El evento que cambia todo]
+- Qué sucede exactamente
+- Cómo impacta al protagonista
+- Por qué es un punto de no retorno
+
+**5. DEBATE (Páginas 12-25)**
+[El protagonista duda]
+- ¿Por qué duda en actuar?
+- ¿Qué le detiene?
+- Última oportunidad de retractarse
+
+## ACTO II - PRIMERA MITAD (Páginas 25-55)
+
+**6. BREAK INTO TWO (Página 25)**
+[Decisión activa de entrar al mundo del Acto II]
+- Qué decide el protagonista
+- Cómo cruza el umbral
+- Mundo nuevo vs mundo viejo
+
+**7. B STORY (Página 30)**
+[Inicio de subtrama]
+- Personaje que ayuda con la lección temática
+- Cómo se relaciona con el tema
+- Función en el viaje del protagonista
+
+**8. FUN AND GAMES (Páginas 30-55)**
+[La promesa del premise]
+- Momentos que venderían el trailer
+- Exploración del nuevo mundo
+- Escenas icónicas sin consecuencias reales aún
+
+**9. MIDPOINT (Página 55)**
+[Falso pico o falso valle]
+- Si es pico: victoria temporal, celebración
+- Si es valle: derrota temporal
+- Las stakes aumentan, reloj comienza a correr
+- Todo cambia a partir de aquí
+
+## ACTO II - SEGUNDA MITAD (Páginas 55-85)
+
+**10. BAD GUYS CLOSE IN (Páginas 55-75)**
+[Fuerzas antagónicas se reagrupan]
+- Si Midpoint fue pico, ahora viene caída
+- Si Midpoint fue valle, ahora empeora
+- Enemigos externos O tensiones internas del equipo
+
+**11. ALL IS LOST (Página 75)**
+[Punto más bajo]
+- Momento opuesto al Midpoint
+- "Whiff of death" - algo o alguien muere literal o metafóricamente
+- Parece que todo está perdido
+
+**12. DARK NIGHT OF THE SOUL (Páginas 75-85)**
+[Desesperación y reflexión]
+- El protagonista se hunde
+- Momento de introspección
+- B Story da la clave para la solución
+
+## ACTO III (Páginas 85-110)
+
+**13. BREAK INTO THREE (Página 85)**
+[Síntesis de A y B Story]
+- El protagonista encuentra la solución
+- Unión de las tramas
+- Plan para el clímax
+
+**14. FINALE (Páginas 85-110)**
+[Aplicación de lo aprendido]
+- Destruir el viejo mundo/problema
+- Demostrar cambio del protagonista
+- Resolver todas las tramas
+
+**15. FINAL IMAGE (Página 110)**
+[Imagen opuesta a la Opening Image]
+- Qué vemos ahora
+- Prueba visual del cambio
+- "Foto del después"
+
+---
+
+**IMPORTANTE:** Cada beat debe tener 2-3 párrafos CONCRETOS con detalles específicos de ESTA historia.

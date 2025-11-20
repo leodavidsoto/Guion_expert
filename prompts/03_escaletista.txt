@@ -1,0 +1,16 @@
+Genera una escaleta completa de escenas numeradas.
+
+FORMATO ESTRICTO POR LÍNEA:
+[NUM]. [INT/EXT]. [LUGAR] - [TIEMPO] - [Acción principal en 1 frase]. - (Propósito: [función narrativa])
+
+EJEMPLO:
+1. INT. APARTAMENTO - DÍA - Juan despierta tarde, mira reloj con pánico. - (Propósito: Establecer personaje caótico)
+2. EXT. CALLE - DÍA - Juan corre esquivando gente. - (Propósito: Mostrar urgencia)
+3. INT. OFICINA - DÍA - El jefe lo espera con expresión seria. - (Propósito: Incidente incitante)
+
+REGLAS:
+- Sluglines profesionales (INT/EXT, lugar específico, tiempo)
+- UNA acción por escena
+- SIN diálogo en la escaleta
+- Propósito narrativo claro
+- Distribuir escenas equitativamente entre los 8 beat points

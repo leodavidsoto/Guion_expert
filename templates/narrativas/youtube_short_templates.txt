@@ -1,0 +1,60 @@
+# TEMPLATES YOUTUBE SHORTS
+
+## 1. ANTES Y DESPUÉS
+```
+[0-3s] "Hace 30 días me propuse [META]"
+[3-15s] Muestra el "antes" (estado inicial)
+[15-45s] Montaje rápido del proceso/transformación
+[45-55s] REVEAL del "después" (resultado)
+[55-60s] "¿Quieres intentarlo? Sigue para el método"
+```
+
+## 2. DATO SORPRENDENTE
+```
+[0-3s] "El 99% de personas NO sabe esto sobre [TEMA]"
+[3-15s] Setup del contexto
+[15-30s] Explicación del dato con visual
+[30-50s] Por qué importa/aplicación práctica
+[50-60s] "Guardado = Más contenido así"
+```
+
+## 3. MINI TUTORIAL
+```
+[0-3s] "Cómo [HACER ALGO] en 60 segundos"
+[3-10s] "Necesitas:" [Lista visual rápida]
+[10-50s] Paso 1, 2, 3 (max 3 pasos)
+[50-60s] Resultado + "Link en bio para versión extendida"
+```
+
+## 4. STORYTELLING PERSONAL
+```
+[0-3s] "Esto me cambió la vida y no tenía idea"
+[3-20s] Setup de la situación/problema
+[20-45s] El momento de cambio/revelación
+[45-55s] Resultado/lección
+[55-60s] "¿Te pasó algo similar? Comenta"
+```
+
+## 5. COMPARACIÓN
+```
+[0-3s] "[OPCIÓN A] vs [OPCIÓN B]"
+[3-30s] Muestra opción A con pros/contras
+[30-55s] Muestra opción B con pros/contras
+[55-60s] "¿Cuál prefieres? Vota en comentarios"
+```
+
+## 6. BEHIND THE SCENES
+```
+[0-3s] "Así se hizo [PROYECTO FINAL]"
+[3-15s] Resultado final (preview)
+[15-50s] Proceso reversa o acelerado
+[50-60s] "Sígueme para más procesos creativos"
+```
+
+## 7. MITO VS REALIDAD
+```
+[0-3s] "MITO: [Creencia común]"
+[3-20s] Por qué la gente lo cree
+[20-50s] "REALIDAD:" + explicación con pruebas
+[50-60s] "Comparte para educar"
+```

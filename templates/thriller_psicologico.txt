@@ -1,0 +1,23 @@
+# TEMPLATE: THRILLER PSICOLÓGICO
+
+ESTRUCTURA SUGERIDA:
+- 20-35 escenas
+- Duración: 90-120 minutos
+- Giros cada 15 minutos
+- Atmósfera opresiva
+
+ELEMENTOS CLAVE:
+1. Protagonista con trauma/secreto
+2. Incidente que desencadena paranoia
+3. Realidad vs percepción difusa
+4. Revelación que cambia todo
+5. Clímax psicológico intenso
+
+ATMÓSFERA:
+- Iluminación: low-key, sombras marcadas
+- Sonido: ambientes inquietantes
+- Ritmo: lento pero tenso
+- Colores: paleta fría, desaturada
+
+EJEMPLO DE PROMPT:
+"thriller psicológico donde [protagonista] descubre que [verdad perturbadora] mientras [circunstancia opresiva]"

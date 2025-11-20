@@ -1,0 +1,37 @@
+Genera un pitch profesional completo.
+
+ESTRUCTURA REQUERIDA:
+
+**LOGLINE:**
+[Una frase poderosa que capture la esencia]
+
+**GÉNERO Y TONO:**
+[Género principal] | Tono: [descriptores del tono]
+
+**PERSONAJES PRINCIPALES:**
+
+PROTAGONISTA:
+- Nombre y edad
+- Objetivo (Want): [qué quiere conseguir]
+- Necesidad (Need): [qué necesita aprender]
+- Defecto (Flaw): [su debilidad principal]
+
+ANTAGONISTA:
+- Nombre y edad
+- Motivación: [por qué se opone]
+- Método: [cómo crea obstáculos]
+
+ALIADO:
+- Nombre y edad
+- Función: [rol en el viaje del protagonista]
+
+**SINOPSIS:**
+
+ACTO I - PLANTEAMIENTO:
+[2-3 párrafos: mundo ordinario, incidente incitante, cruce del umbral]
+
+ACTO II - CONFRONTACIÓN:
+[3-4 párrafos: pruebas, punto medio, crisis]
+
+ACTO III - RESOLUCIÓN:
+[2-3 párrafos: clímax, resolución, nuevo equilibrio]

@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs
+*.log
+logs/
+*.pid
+
+# Output y datos generados
+output/
+temp/
+tmp/
+
+# Configuración local
+.env
+.env.local
+config/users.json
+.server.pid
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Ollama models (muy pesados)
+*.gguf
+models/
+
+# Uploads temporales
+webapp/uploads/
+
+# Node modules (si usas frontend)
+node_modules/
+package-lock.json
+
+# Docker
+.dockerignore
+
+# Backups
+*.backup
+*.bak
+*.broken
+*.old
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Secrets
+secrets/
+*.key
+*.pem
