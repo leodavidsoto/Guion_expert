@@ -60,10 +60,17 @@ esac
 
 # Generar script
 log_info "[2/3] Generando script para $TIPO..."
+
+# Leer contexto de clasificación
+CONTEXTO_CLASIFICACION=$(cat "$OUT/clasificacion/result.txt")
+
 ollama_run_robust "$MODEL_CONCEPTO" \
     "$(cat $PROMPT_FILE)" \
-    "IDEA: $IDEA
-DURACIÓN: $DURACION segundos" \
+    "IDEA ORIGINAL DEL USUARIO: $IDEA
+DURACIÓN OBJETIVO: $DURACION segundos
+
+CONTEXTO Y SUGERENCIAS DEL CLASIFICADOR:
+$CONTEXTO_CLASIFICACION" \
     "$OUT/script/full_script.txt"
 
 log_success "Script generado"

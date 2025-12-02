@@ -29,6 +29,7 @@ fi
 if pgrep -f "python3 server.py" > /dev/null; then
     echo "⚠️  Deteniendo procesos adicionales..."
     pkill -f "python3 server.py"
+    pkill -f "ollama run"
     sleep 1
     echo "✅ Procesos detenidos"
 fi

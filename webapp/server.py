@@ -27,7 +27,27 @@ socketio = SocketIO(
 
 BASE_DIR = Path(__file__).parent.parent
 OUTPUT_DIR = BASE_DIR / "output"
+CONFIG_DIR = BASE_DIR / "config"
 connected_clients = 0
+
+def load_config():
+    """Load configuration from config/models.conf"""
+    config = {}
+    config_file = CONFIG_DIR / "models.conf"
+    if config_file.exists():
+        try:
+            with open(config_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        config[key.strip()] = value.strip().strip('"').strip("'")
+        except Exception as e:
+            print(f"Error loading config: {e}")
+    return config
+
+# Load config on startup
+APP_CONFIG = load_config()
 
 @app.route('/')
 def index():
@@ -45,7 +65,7 @@ def health():
 @app.route('/api/structures/all')
 def get_all_structures():
     try:
-        structures_file = BASE_DIR / "config" / "structures.json"
+        structures_file = CONFIG_DIR / "structures.json"
         if not structures_file.exists():
             return jsonify({'error': 'structures.json not found'}), 404
         
@@ -273,7 +293,7 @@ def run_pipeline_thread(idea, formato=None, estructura=None, auto_detect=True):
         
         env = os.environ.copy()
         env['PYTHONUNBUFFERED'] = '1'
-        env['TERM'] = 'xterm'
+        # env['TERM'] = 'xterm' # Removed to avoid interactive output issues
         
         if not auto_detect:
             if formato:
@@ -283,16 +303,20 @@ def run_pipeline_thread(idea, formato=None, estructura=None, auto_detect=True):
         
         socketio.emit('log', {'type': 'info', 'message': '⚙️  Ejecutando pipeline...'})
         
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-            universal_newlines=True,
-            cwd=str(BASE_DIR),
-            env=env
-        )
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                cwd=str(BASE_DIR),
+                env=env
+            )
+        except Exception as e:
+            socketio.emit('log', {'type': 'error', 'message': f'❌ Error iniciando proceso: {e}'})
+            return
         
         line_count = 0
         timeout = 3600
@@ -356,7 +380,7 @@ def run_pipeline_thread(idea, formato=None, estructura=None, auto_detect=True):
                     if projects:
                         latest = projects[0]
                         socketio.emit('log', {'type': 'success', 'message': f'📂 Proyecto: {latest.name}'})
-                        
+
                         file_count = sum(1 for _ in latest.rglob('*') if _.is_file())
                         socketio.emit('log', {'type': 'success', 'message': f'📄 Archivos: {file_count}'})
                 except Exception as e:
@@ -393,13 +417,14 @@ def run_expert_thread(expert, input_text):
     try:
         socketio.emit('log', {'type': 'info', 'message': f'🎯 Ejecutando {expert}...'})
         
+        # Use config or defaults
         expert_map = {
-            'clasificador': ('llama3.2:3b', 'prompts/00_clasificador_completo.txt'),
-            'concepto': ('qwen2.5:7b', 'prompts/01_concepto.txt'),
-            'arquitecto': ('qwen2.5:14b', 'prompts/02_arquitecto.txt'),
-            'escaletista': ('qwen2.5:7b', 'prompts/03_escaletista.txt'),
-            'dialoguista': ('qwen2.5:14b', 'prompts/04_dialoguista.txt'),
-            'localizador': ('qwen2.5:7b', 'prompts/10_localizador_chile.txt')
+            'clasificador': (APP_CONFIG.get('MODEL_CLASIFICADOR', 'llama3.2:3b'), 'prompts/00_clasificador_completo.txt'),
+            'concepto': (APP_CONFIG.get('MODEL_CONCEPTO', 'qwen2.5:7b'), 'prompts/01_concepto.txt'),
+            'arquitecto': (APP_CONFIG.get('MODEL_ARQUITECTO', 'qwen2.5:14b'), 'prompts/02_arquitecto.txt'),
+            'escaletista': (APP_CONFIG.get('MODEL_ESCALETISTA', 'qwen2.5:7b'), 'prompts/03_escaletista.txt'),
+            'dialoguista': (APP_CONFIG.get('MODEL_DIALOGUISTA', 'qwen2.5:14b'), 'prompts/04_dialoguista.txt'),
+            'localizador': (APP_CONFIG.get('MODEL_LOCALIZADOR', 'qwen2.5:7b'), 'prompts/10_localizador_chile.txt')
         }
         
         if expert not in expert_map:
@@ -477,7 +502,7 @@ def run_structure_thread(structure_id, input_text):
             return
         
         prompt_content = prompt_file.read_text()
-        model = 'qwen2.5:14b'
+        model = APP_CONFIG.get('MODEL_ARQUITECTO', 'qwen2.5:14b')
         
         full_input = f"{prompt_content}\n\nESTRUCTURA: {structure_id}\n\nIDEA:\n{input_text}"
         
@@ -512,28 +537,30 @@ def run_structure_thread(structure_id, input_text):
 def generate_flow():
     data = request.json
     scene_content = data.get('scene_content')
+    output_format = data.get('format', 'text')  # 'text' or 'json'
     
     if not scene_content:
         return jsonify({'error': 'Scene content required'}), 400
     
-    thread = threading.Thread(target=run_flow_thread, args=(scene_content,))
+    thread = threading.Thread(target=run_flow_thread, args=(scene_content, output_format))
     thread.daemon = True
     thread.start()
     
     return jsonify({'status': 'started'})
 
-def run_flow_thread(scene_content):
+def run_flow_thread(scene_content, output_format='text'):
     try:
         socketio.emit('log', {'type': 'info', 'message': '🎬 Director Flow analizando...'})
         
-        prompt_file = BASE_DIR / 'prompts' / '11_director_flow.txt'
+        prompt_filename = '12_director_flow_json.txt' if output_format == 'json' else '11_director_flow.txt'
+        prompt_file = BASE_DIR / 'prompts' / prompt_filename
         
         if not prompt_file.exists():
-            socketio.emit('log', {'type': 'error', 'message': 'Prompt Flow no encontrado'})
+            socketio.emit('log', {'type': 'error', 'message': f'Prompt {prompt_filename} no encontrado'})
             return
         
         prompt_content = prompt_file.read_text()
-        model = 'qwen2.5:14b'
+        model = APP_CONFIG.get('MODEL_DIRECTOR_FLOW', 'qwen2.5:14b')
         
         full_input = f"{prompt_content}\n\nESCENA:\n{scene_content}"
         
@@ -552,6 +579,30 @@ def run_flow_thread(scene_content):
         for line in iter(process.stdout.readline, ''):
             if line:
                 result += line
+                # Emitir chunk si es texto plano, si es JSON esperamos al final para validar
+                if output_format == 'text':
+                    socketio.emit('flow_chunk', {'content': line})
+        
+        process.wait()
+        
+        if process.returncode == 0:
+            final_result = result
+            if output_format == 'json':
+                # Limpiar markdown si existe
+                final_result = result.replace('```json', '').replace('```', '').strip()
+                try:
+                    # Validar JSON
+                    json.loads(final_result)
+                except json.JSONDecodeError:
+                    socketio.emit('log', {'type': 'warning', 'message': '⚠️ El modelo no generó JSON válido, enviando texto crudo'})
+            
+            socketio.emit('log', {'type': 'success', 'message': '✅ Tabla Flow generada'})
+            socketio.emit('flow_completed', {'tabla': final_result, 'format': output_format})
+        else:
+            socketio.emit('log', {'type': 'error', 'message': '❌ Error'})
+        
+    except Exception as e:
+        socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
         
         process.wait()
         
@@ -563,6 +614,107 @@ def run_flow_thread(scene_content):
         
     except Exception as e:
         socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
+
+@app.route('/api/analyze/upload', methods=['POST'])
+def analyze_upload():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    if file:
+        filename = secure_filename(file.filename)
+        upload_folder = app.config.get('UPLOAD_FOLDER')
+        if not upload_folder:
+            # Fallback
+            upload_folder = BASE_DIR / "webapp/uploads"
+        
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+            
+        filepath = Path(upload_folder) / filename
+        file.save(filepath)
+        
+        thread = threading.Thread(target=run_analysis_thread, args=(str(filepath),))
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({'status': 'started', 'filename': filename})
+
+def run_analysis_thread(filepath):
+    try:
+        filename = os.path.basename(filepath)
+        socketio.emit('log', {'type': 'info', 'message': f'📄 Analizando {filename}...'})
+        
+        script_path = BASE_DIR / "scripts/analizar_archivo.sh"
+        if not script_path.exists():
+            socketio.emit('log', {'type': 'error', 'message': 'Script de análisis no encontrado'})
+            return
+
+        cmd = [str(script_path), filepath]
+        
+        process = subprocess.Popen(
+            cmd,
+            cwd=str(BASE_DIR),  # Ensure correct working directory
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+        
+        result_output = ""
+        for line in iter(process.stdout.readline, ''):
+            if line:
+                line = line.strip()
+                result_output += line + "\n"
+                
+                log_type = 'info'
+                if '✓' in line: log_type = 'success'
+                elif '✗' in line or 'Error' in line: log_type = 'error'
+                
+                socketio.emit('log', {'type': log_type, 'message': line})
+        
+        process.wait()
+        
+        if process.returncode == 0:
+            # Leer el reporte generado
+            try:
+                # Buscar el directorio de análisis más reciente
+                analyzer_dir = BASE_DIR / "analyzer"
+                if analyzer_dir.exists():
+                    latest_analysis = sorted(
+                        [d for d in analyzer_dir.iterdir() if d.is_dir() and d.name.startswith('analysis_')],
+                        key=lambda x: x.stat().st_mtime,
+                        reverse=True
+                    )[0]
+                    
+                    report_file = latest_analysis / "ANALYSIS_REPORT.md"
+                    if report_file.exists():
+                        report_content = report_file.read_text()
+                        socketio.emit('analysis_completed', {
+                            'success': True,
+                            'report': report_content,
+                            'path': str(latest_analysis)
+                        })
+                        socketio.emit('log', {'type': 'success', 'message': '✅ Análisis finalizado'})
+                    else:
+                        socketio.emit('log', {'type': 'error', 'message': '❌ Reporte no encontrado'})
+            except Exception as e:
+                socketio.emit('log', {'type': 'error', 'message': f'Error leyendo reporte: {e}'})
+        else:
+            socketio.emit('log', {'type': 'error', 'message': '❌ Error en el análisis'})
+            socketio.emit('analysis_completed', {'success': False})
+            
+    except Exception as e:
+        socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
+
+@app.route('/api/config/models')
+def get_model_config():
+    """Return current model configuration"""
+    return jsonify(APP_CONFIG)
 
 @socketio.on('connect')
 def handle_connect():

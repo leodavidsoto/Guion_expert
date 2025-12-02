@@ -30,22 +30,43 @@ log "Output: $ANALYSIS_DIR"
 echo ""
 
 # Extracción de texto
-log_info "[1/5] Extrayendo texto del PDF..."
+log_info "[1/5] Procesando texto..."
 
-if command -v pdftotext > /dev/null; then
-    pdftotext -layout "$PDF" "$ANALYSIS_DIR/raw_text.txt" 2>/dev/null
-    log_success "Texto extraído con pdftotext"
-elif command -v python3 > /dev/null; then
-    python3 << PYEOF
+EXTENSION="${PDF##*.}"
+EXTENSION=$(echo "$EXTENSION" | tr '[:upper:]' '[:lower:]')
+
+if [ "$EXTENSION" = "txt" ] || [ "$EXTENSION" = "fountain" ]; then
+    cp "$PDF" "$ANALYSIS_DIR/raw_text.txt"
+    log_success "Archivo de texto detectado"
+else
+    log_info "Extrayendo texto del PDF..."
+    if command -v pdftotext > /dev/null; then
+        pdftotext -layout "$PDF" "$ANALYSIS_DIR/raw_text.txt" 2>/dev/null
+        if [ $? -eq 0 ]; then
+            log_success "Texto extraído con pdftotext"
+        else
+            log_warning "pdftotext falló, intentando con Python..."
+            USE_PYTHON=true
+        fi
+    else
+        USE_PYTHON=true
+    fi
+
+    if [ "$USE_PYTHON" = true ]; then
+        python3 - "$PDF" "$ANALYSIS_DIR" << 'PYEOF'
 import sys
 try:
     import PyPDF2
-    with open('$PDF', 'rb') as f:
+    pdf_file = sys.argv[1]
+    analysis_dir = sys.argv[2]
+    
+    with open(pdf_file, 'rb') as f:
         pdf = PyPDF2.PdfReader(f)
         text = ''
         for page in pdf.pages:
             text += page.extract_text() + '\n'
-    with open('$ANALYSIS_DIR/raw_text.txt', 'w') as f:
+            
+    with open(f'{analysis_dir}/raw_text.txt', 'w', encoding='utf-8') as f:
         f.write(text)
     print("✓ Texto extraído con PyPDF2")
 except ImportError:
@@ -55,17 +76,14 @@ except Exception as e:
     print(f"✗ Error: {e}")
     sys.exit(1)
 PYEOF
-    [ $? -ne 0 ] && log_error "Error en extracción" && exit 1
-else
-    log_error "Necesitas pdftotext o Python con PyPDF2"
-    echo "Instala: brew install poppler"
-    exit 1
+        [ $? -ne 0 ] && log_error "Error en extracción" && exit 1
+    fi
 fi
 
 # Análisis básico
 log_info "[2/5] Analizando estructura..."
 
-python3 << 'PYEOF'
+python3 - "$ANALYSIS_DIR" << 'PYEOF'
 import sys, re, json
 from collections import Counter
 
@@ -111,14 +129,14 @@ with open(f'{analysis_dir}/stats.json', 'w') as f:
 
 print(f"✓ {len(sluglines)} escenas identificadas")
 print(f"✓ {len(set(characters))} personajes encontrados")
-PYEOF "$ANALYSIS_DIR"
+PYEOF
 
 log_success "Estructura analizada"
 
 # Detectar estructura narrativa
 log_info "[3/5] Detectando estructura narrativa..."
 
-python3 << 'PYEOF'
+python3 - "$ANALYSIS_DIR" << 'PYEOF'
 import sys, json
 
 analysis_dir = sys.argv[1]
@@ -153,14 +171,14 @@ with open(f'{analysis_dir}/structure_analysis.json', 'w') as f:
     json.dump(analysis, f, indent=2)
 
 print(f"✓ Estructura: {analysis['detected_structure']} ({analysis['confidence']}%)")
-PYEOF "$ANALYSIS_DIR"
+PYEOF
 
 log_success "Estructura detectada"
 
 # Análisis de diálogos
 log_info "[4/5] Analizando diálogos..."
 
-python3 << 'PYEOF'
+python3 - "$ANALYSIS_DIR" << 'PYEOF'
 import sys, json
 from collections import defaultdict
 
@@ -182,46 +200,61 @@ with open(f'{analysis_dir}/dialogue_analysis.json', 'w') as f:
     json.dump(dialogue_stats, f, indent=2)
 
 print("✓ Diálogos analizados")
-PYEOF "$ANALYSIS_DIR"
+PYEOF
 
 log_success "Diálogos analizados"
 
 # Generar reporte
 log_info "[5/5] Generando reporte..."
 
+STATS_CONTENT=$(python3 - "$ANALYSIS_DIR" << 'PYEOF'
+import sys, json
+analysis_dir = sys.argv[1]
+with open(f"{analysis_dir}/stats.json", 'r') as f:
+    data = json.load(f)
+print(f"- **Páginas estimadas:** {data['estimated_pages']}")
+print(f"- **Total de escenas:** {data['total_scenes']}")
+print(f"- **Personajes únicos:** {data['total_characters']}")
+if data['total_scenes'] > 0:
+    print(f"- **Interiores:** {data['int_scenes']} ({int(data['int_scenes']/data['total_scenes']*100)}%)")
+    print(f"- **Exteriores:** {data['ext_scenes']} ({int(data['ext_scenes']/data['total_scenes']*100)}%)")
+else:
+    print(f"- **Interiores:** {data['int_scenes']} (0%)")
+    print(f"- **Exteriores:** {data['ext_scenes']} (0%)")
+PYEOF
+)
+
+STRUCTURE_CONTENT=$(python3 - "$ANALYSIS_DIR" << 'PYEOF'
+import sys, json
+analysis_dir = sys.argv[1]
+with open(f"{analysis_dir}/structure_analysis.json", 'r') as f:
+    data = json.load(f)
+print(f"**Estructura detectada:** {data['detected_structure']}")
+print(f"**Confianza:** {data['confidence']}%")
+print()
+if 'breakdown' in data:
+    for section, desc in data['breakdown'].items():
+        print(f"- **{section}:** {desc}")
+PYEOF
+)
+
 cat > "$ANALYSIS_DIR/ANALYSIS_REPORT.md" << MDEOF
 # 📊 ANÁLISIS DE GUION
 
-**Archivo:** $(basename $PDF)  
+**Archivo:** $(basename "$PDF")  
 **Fecha:** $(date '+%Y-%m-%d %H:%M:%S')
 
 ---
 
 ## 📈 ESTADÍSTICAS GENERALES
 
-$(cat "$ANALYSIS_DIR/stats.json" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-print(f\"- **Páginas estimadas:** {data['estimated_pages']}\")
-print(f\"- **Total de escenas:** {data['total_scenes']}\")
-print(f\"- **Personajes únicos:** {data['total_characters']}\")
-print(f\"- **Interiores:** {data['int_scenes']} ({int(data['int_scenes']/data['total_scenes']*100)}%)\")
-print(f\"- **Exteriores:** {data['ext_scenes']} ({int(data['ext_scenes']/data['total_scenes']*100)}%)\")
-")
+$STATS_CONTENT
 
 ---
 
 ## 🏗️ ESTRUCTURA NARRATIVA
 
-$(cat "$ANALYSIS_DIR/structure_analysis.json" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-print(f\"**Estructura detectada:** {data['detected_structure']}\")
-print(f\"**Confianza:** {data['confidence']}%\")
-print()
-for section, desc in data['breakdown'].items():
-    print(f\"- **{section}:** {desc}\")
-")
+$STRUCTURE_CONTENT
 
 ---
 
@@ -252,3 +285,4 @@ echo "  cat $ANALYSIS_DIR/ANALYSIS_REPORT.md"
 echo ""
 echo "Guardar ubicación para análisis adicionales:"
 echo "$ANALYSIS_DIR" > /tmp/last_analysis.txt
+

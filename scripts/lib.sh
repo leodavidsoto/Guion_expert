@@ -23,21 +23,42 @@ ollama_run_robust() {
     local prompt=$2
     local input=$3
     local output=$4
+    local timeout_secs=${5:-300} # Default 5 minutes
     local max_intentos=3
     
     for intento in $(seq 1 $max_intentos); do
-        # SIN timeout (compatible macOS)
-        echo "$prompt
+        log_info "Intento $intento/$max_intentos ($modelo)..."
+        
+        # Construct full input
+        FULL_INPUT="$prompt
 
 INPUT:
-$input" | ollama run "$modelo" 2>&1 > "$output.tmp"
+$input"
         
-        if [ $? -eq 0 ]; then
+        # Run with timeout if available (gtimeout on mac if installed, else timeout, else python fallback)
+        if command -v gtimeout &> /dev/null; then
+            echo "$FULL_INPUT" | gtimeout "$timeout_secs" ollama run "$modelo" 2>&1 > "$output.tmp"
+        elif command -v timeout &> /dev/null; then
+            echo "$FULL_INPUT" | timeout "$timeout_secs" ollama run "$modelo" 2>&1 > "$output.tmp"
+        else
+            # Fallback using perl for timeout on macOS
+            echo "$FULL_INPUT" | perl -e 'alarm shift; exec @ARGV' "$timeout_secs" ollama run "$modelo" 2>&1 > "$output.tmp"
+        fi
+        
+        EXIT_CODE=$?
+        
+        if [ $EXIT_CODE -eq 0 ]; then
             clean_ansi "$output.tmp"
             if [ -s "$output.tmp" ] && [ $(wc -l < "$output.tmp") -gt 1 ]; then
                 mv "$output.tmp" "$output"
                 return 0
+            else
+                log_error "Salida vacía o inválida"
             fi
+        elif [ $EXIT_CODE -eq 124 ]; then
+            log_error "Timeout ($timeout_secs s) excedido"
+        else
+            log_error "Error en ejecución (Exit code: $EXIT_CODE)"
         fi
         
         rm -f "$output.tmp"

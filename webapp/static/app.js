@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadStructures();
     loadExperts();
     loadProjects();
+    initAnalysis();
 });
 
 function initNavigation() {
@@ -32,18 +33,18 @@ function switchView(view) {
         icon.classList.remove('active');
     });
     document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
-    
+
     // Actualizar vistas
     document.querySelectorAll('.view').forEach(v => {
         v.classList.remove('active');
     });
-    
+
     const viewElement = document.getElementById(`${view}View`);
     if (viewElement) {
         viewElement.classList.add('active');
         currentView = view;
     }
-    
+
     // Actualizar header
     const titles = {
         'generate': '🎬 Guion Experts Suite V2',
@@ -52,7 +53,7 @@ function switchView(view) {
         'analyze': '📄 Analizar PDF',
         'projects': '📁 Proyectos'
     };
-    
+
     document.getElementById('headerTitle').textContent = titles[view] || titles['generate'];
 }
 
@@ -62,7 +63,7 @@ function switchView(view) {
 function initAutoDetect() {
     const autoDetect = document.getElementById('autoDetect');
     const manualControls = document.getElementById('manualControls');
-    
+
     autoDetect.addEventListener('change', () => {
         if (autoDetect.checked) {
             manualControls.classList.add('hidden');
@@ -81,23 +82,23 @@ function initGenerateButton() {
 
 async function generateProject() {
     const idea = document.getElementById('ideaInput').value.trim();
-    
+
     if (!idea) {
         alert('Por favor ingresa una idea');
         return;
     }
-    
+
     const autoDetect = document.getElementById('autoDetect').checked;
     const formato = document.getElementById('formatoSelect').value;
     const estructura = document.getElementById('estructuraSelect').value;
-    
+
     // Limpiar consola
     document.getElementById('logConsole').innerHTML = '';
-    
+
     // Enviar petición
     const response = await fetch('/api/generate', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             idea: idea,
             auto_detect: autoDetect,
@@ -105,9 +106,9 @@ async function generateProject() {
             estructura: estructura || null
         })
     });
-    
+
     const data = await response.json();
-    
+
     if (data.status === 'started') {
         addLog('info', '🚀 Generación iniciada...');
     }
@@ -120,10 +121,10 @@ async function loadStructures() {
     try {
         const response = await fetch('/api/structures/all');
         const data = await response.json();
-        
+
         const grid = document.getElementById('structuresGrid');
         grid.innerHTML = '';
-        
+
         // Iterar por categorías
         for (const [category, structures] of Object.entries(data)) {
             // Header de categoría
@@ -131,7 +132,7 @@ async function loadStructures() {
             header.className = 'category-header';
             header.innerHTML = `<h3>${getCategoryIcon(category)} ${getCategoryName(category)}</h3>`;
             grid.appendChild(header);
-            
+
             // Estructuras de esta categoría
             for (const [key, structure] of Object.entries(structures)) {
                 const card = createStructureCard(key, structure, category);
@@ -147,7 +148,7 @@ function createStructureCard(key, structure, category) {
     const card = document.createElement('div');
     card.className = 'card';
     card.style.cursor = 'pointer';
-    
+
     card.innerHTML = `
         <div class="card-icon">${getCategoryIcon(category)}</div>
         <div class="card-title">${structure.name}</div>
@@ -158,28 +159,28 @@ function createStructureCard(key, structure, category) {
             ${structure.best_for ? `<span class="badge">${structure.best_for}</span>` : ''}
         </div>
     `;
-    
+
     card.addEventListener('click', () => openStructureWorkspace(key, structure));
-    
+
     return card;
 }
 
 function openStructureWorkspace(structureId, structure) {
     currentStructure = { id: structureId, ...structure };
-    
+
     // Cambiar a vista de workspace
     switchView('structureWorkspace');
-    
+
     // Actualizar título
     document.getElementById('workspaceStructureName').textContent = structure.name;
-    
+
     // Limpiar input y resultado
     document.getElementById('workspaceInput').value = '';
     document.getElementById('workspaceResult').innerHTML = '<p class="empty">Ingresa tu idea y genera la estructura...</p>';
     document.getElementById('workspaceResult').classList.add('empty');
     document.getElementById('workspaceFlowResult').innerHTML = '<p class="empty">Primero genera la estructura</p>';
     document.getElementById('workspaceFlowResult').classList.add('empty');
-    
+
     // Mostrar metadata
     const metaInfo = document.getElementById('workspaceMetaInfo');
     metaInfo.innerHTML = `
@@ -190,10 +191,10 @@ function openStructureWorkspace(structureId, structure) {
         <p><strong>Mejor para:</strong> ${structure.best_for || 'General'}</p>
         <p style="color: #666; margin-top: 10px;">${structure.description || ''}</p>
     `;
-    
+
     // Limpiar logs
     document.getElementById('workspaceLog').innerHTML = '';
-    
+
     // Setup botón de generar
     document.getElementById('workspaceGenerateBtn').onclick = () => generateWithStructure();
     document.getElementById('workspaceFlowBtn').onclick = () => generateFlowTable();
@@ -201,31 +202,31 @@ function openStructureWorkspace(structureId, structure) {
 
 async function generateWithStructure() {
     const input = document.getElementById('workspaceInput').value.trim();
-    
+
     if (!input) {
         alert('Por favor ingresa una idea');
         return;
     }
-    
+
     addWorkspaceLog('info', `🏗️ Generando con ${currentStructure.name}...`);
-    
+
     // Limpiar resultado
     const resultDiv = document.getElementById('workspaceResult');
     resultDiv.innerHTML = '<p style="color: #999;">Generando...</p>';
     resultDiv.classList.add('empty');
-    
+
     try {
         const response = await fetch('/api/structure/generate', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 structure_id: currentStructure.id,
                 input: input
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.status === 'started') {
             addWorkspaceLog('success', '✅ Generación iniciada');
         }
@@ -236,29 +237,30 @@ async function generateWithStructure() {
 
 async function generateFlowTable() {
     const sceneContent = document.getElementById('workspaceResult').textContent;
-    
+
     if (!sceneContent || sceneContent.includes('Esperando')) {
         alert('Primero genera la estructura');
         return;
     }
-    
+
     addWorkspaceLog('info', '🎬 Generando tabla Director Flow...');
-    
+
     const flowResultDiv = document.getElementById('workspaceFlowResult');
     flowResultDiv.innerHTML = '<p style="color: #999;">Generando tabla...</p>';
     flowResultDiv.classList.add('empty');
-    
+
     try {
         const response = await fetch('/api/flow/generate', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                scene_content: sceneContent
+                scene_content: sceneContent,
+                format: 'json' // Default to JSON for Auto Flow
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.status === 'started') {
             addWorkspaceLog('success', '✅ Generación Flow iniciada');
         }
@@ -274,10 +276,10 @@ async function loadExperts() {
     try {
         const response = await fetch('/api/experts');
         const experts = await response.json();
-        
+
         const grid = document.getElementById('expertsGrid');
         grid.innerHTML = '';
-        
+
         for (const [key, expert] of Object.entries(experts)) {
             const card = createExpertCard(key, expert);
             grid.appendChild(card);
@@ -291,58 +293,58 @@ function createExpertCard(key, expert) {
     const card = document.createElement('div');
     card.className = 'card';
     card.style.cursor = 'pointer';
-    
+
     card.innerHTML = `
         <div class="card-icon">${expert.icon}</div>
         <div class="card-title">${expert.name}</div>
         <div class="card-description">${expert.description}</div>
     `;
-    
+
     card.addEventListener('click', () => openExpertWorkspace(key, expert));
-    
+
     return card;
 }
 
 function openExpertWorkspace(expertId, expert) {
     currentExpert = { id: expertId, ...expert };
-    
+
     // Mostrar workspace
     document.getElementById('expertWorkspace').classList.remove('hidden');
     document.getElementById('expertTitle').textContent = `${expert.icon} ${expert.name}`;
-    
+
     // Limpiar
     document.getElementById('expertInput').value = '';
     document.getElementById('expertResult').innerHTML = '<p class="empty">Esperando input...</p>';
     document.getElementById('expertResult').classList.add('empty');
-    
+
     // Scroll al workspace
     document.getElementById('expertWorkspace').scrollIntoView({ behavior: 'smooth' });
 }
 
 document.getElementById('runExpertBtn')?.addEventListener('click', async () => {
     const input = document.getElementById('expertInput').value.trim();
-    
+
     if (!input) {
         alert('Por favor ingresa un input');
         return;
     }
-    
+
     const resultDiv = document.getElementById('expertResult');
     resultDiv.innerHTML = '<p style="color: #999;">Procesando...</p>';
     resultDiv.classList.add('empty');
-    
+
     try {
         const response = await fetch('/api/expert/run', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 expert: currentExpert.id,
                 input: input
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.status === 'started') {
             addLog('success', `✅ Ejecutando ${currentExpert.name}`);
         }
@@ -358,15 +360,15 @@ async function loadProjects() {
     try {
         const response = await fetch('/api/projects');
         const projects = await response.json();
-        
+
         const grid = document.getElementById('projectsGrid');
         grid.innerHTML = '';
-        
+
         if (projects.length === 0) {
             grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No hay proyectos aún</p>';
             return;
         }
-        
+
         projects.forEach(project => {
             const card = createProjectCard(project);
             grid.appendChild(card);
@@ -379,9 +381,9 @@ async function loadProjects() {
 function createProjectCard(project) {
     const card = document.createElement('div');
     card.className = 'card';
-    
+
     const date = new Date(project.created * 1000);
-    
+
     card.innerHTML = `
         <div class="card-icon">📂</div>
         <div class="card-title">${project.id}</div>
@@ -391,7 +393,7 @@ function createProjectCard(project) {
             <span class="badge">📅 ${date.toLocaleDateString()}</span>
         </div>
     `;
-    
+
     return card;
 }
 
@@ -401,11 +403,11 @@ function createProjectCard(project) {
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const tab = btn.dataset.tab;
-        
+
         // Actualizar botones
         btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
+
         // Actualizar contenido
         btn.closest('.form-section').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById(`${tab}TabContent`).classList.add('active');
@@ -421,47 +423,102 @@ function initSocketListeners() {
         document.getElementById('statusBadge').textContent = '● Conectado';
         document.getElementById('statusBadge').style.background = 'var(--success)';
     });
-    
+
     socket.on('disconnect', () => {
         console.log('Desconectado');
         document.getElementById('statusBadge').textContent = '● Desconectado';
         document.getElementById('statusBadge').style.background = 'var(--error)';
     });
-    
+
     socket.on('log', (data) => {
         addLog(data.type, data.message);
     });
-    
+
     socket.on('structure_result', (data) => {
         const resultDiv = document.getElementById('workspaceResult');
         resultDiv.textContent = data.content;
         resultDiv.classList.remove('empty');
         addWorkspaceLog('success', '✅ Estructura generada');
     });
-    
+
     socket.on('flow_completed', (data) => {
         const flowDiv = document.getElementById('workspaceFlowResult');
-        flowDiv.textContent = data.tabla;
+
+        if (data.format === 'json') {
+            try {
+                const shots = JSON.parse(data.tabla);
+                let html = '<div style="margin-bottom: 10px;"><button class="btn btn-primary" onclick="downloadFlowJson()">⬇️ Descargar JSON (Auto Flow)</button></div>';
+                html += '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
+                html += '<thead><tr style="background: #f5f5f5; text-align: left;">';
+                html += '<th style="padding: 8px; border: 1px solid #ddd;">#</th>';
+                html += '<th style="padding: 8px; border: 1px solid #ddd;">Prompt</th>';
+                html += '<th style="padding: 8px; border: 1px solid #ddd;">Control</th>';
+                html += '<th style="padding: 8px; border: 1px solid #ddd;">Modo</th>';
+                html += '</tr></thead><tbody>';
+
+                shots.forEach(shot => {
+                    html += '<tr>';
+                    html += `<td style="padding: 8px; border: 1px solid #ddd;">${shot.shot_number}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd; font-size: 0.9em;">${shot.prompt}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd;">${shot.camera_control}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd;">${shot.mode}</td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+
+                // Guardar JSON globalmente para descarga
+                window.lastFlowJson = JSON.stringify(shots, null, 2);
+                flowDiv.innerHTML = html;
+
+            } catch (e) {
+                console.error("Error parsing JSON", e);
+                flowDiv.textContent = data.tabla; // Fallback
+            }
+        } else {
+            flowDiv.textContent = data.tabla;
+        }
+
         flowDiv.classList.remove('empty');
         addWorkspaceLog('success', '✅ Tabla Flow completada');
     });
-    
+
     socket.on('expert_update', (data) => {
         const resultDiv = document.getElementById('expertResult');
         resultDiv.textContent = data.content;
         resultDiv.classList.remove('empty');
     });
-    
+
     socket.on('expert_completed', (data) => {
         addLog('success', `✅ ${currentExpert?.name || 'Experto'} completado`);
     });
-    
+
     socket.on('generation_completed', (data) => {
         if (data.returncode === 0) {
             addLog('success', '✅ Generación completada exitosamente');
             loadProjects(); // Recargar lista de proyectos
         } else {
             addLog('error', '❌ Error en la generación');
+        }
+    });
+
+    socket.on('analysis_completed', (data) => {
+        const resultDiv = document.getElementById('analysisResult');
+        if (data.success) {
+            resultDiv.innerHTML = `<pre style="white-space: pre-wrap; font-family: sans-serif;">${data.report}</pre>`;
+            resultDiv.classList.remove('empty');
+
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-primary';
+            btn.textContent = '📂 Abrir Carpeta de Análisis';
+            btn.style.marginTop = '20px';
+            btn.onclick = () => {
+                fetch(`/api/project/${data.path.split('/').pop()}/open`, { method: 'POST' });
+            };
+            resultDiv.appendChild(btn);
+
+        } else {
+            resultDiv.innerHTML = '<p style="color: var(--error);">❌ Error en el análisis</p>';
         }
     });
 }
@@ -529,15 +586,15 @@ async function loadProjects() {
     try {
         const response = await fetch('/api/projects');
         const projects = await response.json();
-        
+
         const grid = document.getElementById('projectsGrid');
         grid.innerHTML = '';
-        
+
         if (projects.length === 0) {
             grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No hay proyectos aún. ¡Genera tu primer guion!</p>';
             return;
         }
-        
+
         projects.forEach(project => {
             const card = createProjectCard(project);
             grid.appendChild(card);
@@ -551,9 +608,9 @@ function createProjectCard(project) {
     const card = document.createElement('div');
     card.className = 'card';
     card.style.cursor = 'pointer';
-    
+
     const date = new Date(project.created * 1000);
-    
+
     card.innerHTML = `
         <div class="card-icon">📂</div>
         <div class="card-title">${project.id}</div>
@@ -572,20 +629,20 @@ function createProjectCard(project) {
             </button>
         </div>
     `;
-    
+
     return card;
 }
 
 async function openProjectFolder(projectId, event) {
     event.stopPropagation();
-    
+
     try {
         const response = await fetch(`/api/project/${projectId}/open`, {
             method: 'POST'
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             addLog('success', `✅ Carpeta abierta: ${projectId}`);
         } else {
@@ -598,16 +655,16 @@ async function openProjectFolder(projectId, event) {
 
 async function viewProjectFiles(projectId, event) {
     event.stopPropagation();
-    
+
     try {
         const response = await fetch(`/api/project/${projectId}/files`);
         const data = await response.json();
-        
+
         if (data.error) {
             alert(`Error: ${data.error}`);
             return;
         }
-        
+
         showProjectFilesModal(projectId, data);
     } catch (error) {
         alert(`Error: ${error.message}`);
@@ -627,7 +684,7 @@ function showProjectFilesModal(projectId, data) {
         z-index: 10000;
         padding: 20px;
     `;
-    
+
     const modalContent = document.createElement('div');
     modalContent.style.cssText = `
         background: white;
@@ -638,7 +695,7 @@ function showProjectFilesModal(projectId, data) {
         overflow-y: auto;
         padding: 30px;
     `;
-    
+
     let filesHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2 style="margin: 0;">📂 ${projectId}</h2>
@@ -646,7 +703,7 @@ function showProjectFilesModal(projectId, data) {
         </div>
         <p style="color: #666; margin-bottom: 20px;">Total: ${data.total_files} archivos</p>
     `;
-    
+
     // Organizar por carpeta
     for (const [folder, files] of Object.entries(data.folders)) {
         filesHTML += `
@@ -656,7 +713,7 @@ function showProjectFilesModal(projectId, data) {
                 </h3>
                 <div style="display: grid; gap: 10px;">
         `;
-        
+
         files.forEach(file => {
             const icon = getFileIcon(file.extension);
             filesHTML += `
@@ -666,24 +723,24 @@ function showProjectFilesModal(projectId, data) {
                         <div style="color: #666; font-size: 0.85em;">${file.size_human}</div>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        ${file.extension === '.txt' || file.extension === '.md' ? 
-                            `<button onclick="viewFile('${projectId}', '${file.path}')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85em;">👁️ Ver</button>` : ''}
+                        ${file.extension === '.txt' || file.extension === '.md' ?
+                    `<button onclick="viewFile('${projectId}', '${file.path}')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85em;">👁️ Ver</button>` : ''}
                         <button onclick="downloadFile('${projectId}', '${file.path}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85em;">⬇️ Descargar</button>
                     </div>
                 </div>
             `;
         });
-        
+
         filesHTML += `
                 </div>
             </div>
         `;
     }
-    
+
     modalContent.innerHTML = filesHTML;
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
-    
+
     // Cerrar al hacer click fuera
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
@@ -696,12 +753,12 @@ async function viewFile(projectId, filePath) {
     try {
         const response = await fetch(`/api/project/${projectId}/view/${filePath}`);
         const data = await response.json();
-        
+
         if (data.error) {
             alert(`Error: ${data.error}`);
             return;
         }
-        
+
         showFileContentModal(data);
     } catch (error) {
         alert(`Error: ${error.message}`);
@@ -720,7 +777,7 @@ function showFileContentModal(data) {
         z-index: 10001;
         padding: 20px;
     `;
-    
+
     const modalContent = document.createElement('div');
     modalContent.style.cssText = `
         background: white;
@@ -732,7 +789,7 @@ function showFileContentModal(data) {
         display: flex;
         flex-direction: column;
     `;
-    
+
     modalContent.innerHTML = `
         <div style="padding: 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
             <div>
@@ -745,10 +802,10 @@ function showFileContentModal(data) {
             <pre style="margin: 0; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.6;">${escapeHtml(data.content)}</pre>
         </div>
     `;
-    
+
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
-    
+
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.remove();
@@ -779,4 +836,84 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ANÁLISIS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function initAnalysis() {
+    const dropZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+
+    if (!dropZone || !fileInput) return;
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--primary)';
+        dropZone.style.background = 'rgba(102, 126, 234, 0.1)';
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#e0e0e0';
+        dropZone.style.background = 'transparent';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#e0e0e0';
+        dropZone.style.background = 'transparent';
+
+        if (e.dataTransfer.files.length) {
+            uploadFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+            uploadFile(fileInput.files[0]);
+        }
+    });
+}
+
+async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    document.getElementById('analysisArea').classList.remove('hidden');
+    const resultDiv = document.getElementById('analysisResult');
+    resultDiv.innerHTML = '<p style="color: #999;">Subiendo y analizando...</p>';
+    resultDiv.classList.add('empty');
+
+    try {
+        const response = await fetch('/api/analyze/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.status === 'started') {
+            addLog('info', `📄 Subido: ${data.filename}`);
+        } else {
+            resultDiv.innerHTML = `<p style="color: var(--error);">Error: ${data.error}</p>`;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<p style="color: var(--error);">Error: ${error.message}</p>`;
+    }
+}
+
+function downloadFlowJson() {
+    if (!window.lastFlowJson) return;
+    const blob = new Blob([window.lastFlowJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'auto_flow_sequence.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }

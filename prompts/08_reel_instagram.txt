@@ -1,4 +1,5 @@
-Genera un script completo para Instagram Reel (vertical 9:16, 15-90 segundos).
+Genera un script completo para Instagram Reel (vertical 9:16, 15-90 segundos) BASADO STRICTAMENTE EN LA IDEA DEL USUARIO.
+NO INVENTES UNA HISTORIA DIFERENTE. USA LA IDEA PROPORCIONADA.
 
 **ESTRUCTURA INSTAGRAM REEL:**
 
