@@ -5,3 +5,5 @@ werkzeug
 anthropic>=0.40.0
 python-dotenv>=1.0.0
 jsonschema>=4.0.0
+pydantic>=2.6.0
+pydantic-settings>=2.2.0

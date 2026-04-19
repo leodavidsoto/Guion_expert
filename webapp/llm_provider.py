@@ -1,7 +1,7 @@
 """
 LLM Provider Adapter — Guion_expert
 ====================================
-Reemplaza las llamadas a Ollama por Claude 3.5 Haiku (Anthropic API).
+Adapter unificado: Claude Haiku 4.5 (default) o Ollama (fallback opcional).
 
 Uso:
     from llm_provider import generate
@@ -9,12 +9,15 @@ Uso:
     for chunk in generate(model="cualquier-modelo", prompt="...", stream=True):
         print(chunk, end="")
 
-Variables de entorno (via .env):
-    ANTHROPIC_API_KEY         (requerida)
-    LLM_PROVIDER              claude (default) | ollama
-    CLAUDE_MODEL              claude-haiku-4-5-20251001 (default)
-    CLAUDE_MAX_TOKENS         4096 (default)
-    CLAUDE_TEMPERATURE        0.7 (default)
+Configuración: toda vía `webapp/config.py` (pydantic-settings).
+    - ANTHROPIC_API_KEY      (requerida si LLM_PROVIDER=claude)
+    - LLM_PROVIDER           claude (default) | ollama
+    - CLAUDE_MODEL           claude-haiku-4-5-20251001 (default)
+    - CLAUDE_MAX_TOKENS      4096 (default)
+    - CLAUDE_TEMPERATURE     0.7 (default)
+
+Fail-fast: si falta la API key o config está mal, la app crashea
+al import, no en runtime.
 
 Mantiene una API compatible con el patrón `ollama run model prompt`
 para que webapp/server.py pueda reemplazar subprocess con una llamada
@@ -22,29 +25,23 @@ directa y seguir haciendo streaming por SocketIO.
 """
 from __future__ import annotations
 
-import os
 import subprocess
 from typing import Iterator, Optional
 
-# Intento de cargar .env automáticamente si python-dotenv está disponible
-try:
-    from dotenv import load_dotenv  # type: ignore
-    # Busca .env en la raíz del proyecto (un nivel arriba de webapp/)
-    from pathlib import Path
-    _env_path = Path(__file__).resolve().parent.parent / ".env"
-    if _env_path.exists():
-        load_dotenv(_env_path)
-except ImportError:
-    pass  # si no está instalado, seguimos con variables de entorno del shell
+# Configuración centralizada (fail-fast con pydantic-settings).
+# Si falta ANTHROPIC_API_KEY o algo está mal, el import crashea la app
+# inmediatamente con un error claro — antes del primer request.
+from config import settings
 
 
-# --- Configuración global ----------------------------------------------------
+# --- Configuración global (alias retrocompatibles) ---------------------------
+# Mantenemos estos nombres en módulo-level por si algo externo los importaba.
 
-PROVIDER = os.getenv("LLM_PROVIDER", "claude").lower()
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001").strip()
-CLAUDE_MAX_TOKENS = int(os.getenv("CLAUDE_MAX_TOKENS", "4096"))
-CLAUDE_TEMPERATURE = float(os.getenv("CLAUDE_TEMPERATURE", "0.7"))
+PROVIDER: str = settings.llm_provider
+ANTHROPIC_API_KEY: str = settings.anthropic_api_key.get_secret_value()
+CLAUDE_MODEL: str = settings.claude_model
+CLAUDE_MAX_TOKENS: int = settings.claude_max_tokens
+CLAUDE_TEMPERATURE: float = settings.claude_temperature
 
 
 # --- Estado del provider -----------------------------------------------------
