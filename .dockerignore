@@ -1,0 +1,61 @@
+# =============================================================
+# Excluir del contexto de build de Docker
+# =============================================================
+# Reduce el tamaño del context que envía el daemon, acelera builds,
+# y evita filtrar secretos.
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.venv*
+
+# --- Git / control de versiones ---
+.git/
+.gitignore
+.github/
+.gitattributes
+
+# --- Secretos (.env va montado como volumen, no copiado al image) ---
+.env
+.env.*
+!.env.example
+
+# --- Outputs y datos generados (se montan como volúmenes) ---
+output/
+logs/
+*.log
+.server.pid
+/tmp/
+webapp/uploads/
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# --- Tests / docs internas ---
+docs/audit_ollama.md
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+*.cover
+
+# --- Docker mismo (sería raro pero por las dudas) ---
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# --- Backups ---
+*_BACKUP_*
+*.bak

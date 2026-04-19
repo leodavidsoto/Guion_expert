@@ -1,0 +1,63 @@
+# =============================================================
+# Guion_expert — docker-compose
+# =============================================================
+# Uso local:
+#   docker compose up -d --build
+#   docker compose logs -f guion-web
+#   docker compose down
+#
+# Deploy Hetzner:
+#   1. scp el repo al VPS (o git clone)
+#   2. crear .env con ANTHROPIC_API_KEY real
+#   3. docker compose up -d --build
+#   4. configurar Caddy/nginx/Traefik para proxy y TLS
+# =============================================================
+
+services:
+  guion-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: guion-web
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+
+    # .env se monta como archivo leído por pydantic-settings dentro del container.
+    # NO usar `env_file` porque eso pondría las vars en el entorno del container
+    # (visible con `docker inspect`). Mount como secreto = más seguro.
+    volumes:
+      - ./.env:/app/.env:ro
+
+      # Output persistente (escenas, clasificaciones, prompts)
+      - ./output:/app/output
+
+      # Logs (estructurados JSON)
+      - ./logs:/app/logs
+
+      # Uploads de usuario (PDFs analizados)
+      - ./webapp/uploads:/app/webapp/uploads
+
+      # Prompts como read-only (los editás desde el host si hace falta)
+      - ./prompts:/app/prompts:ro
+
+      # Estructuras narrativas (JSON, read-only)
+      - ./estructuras:/app/estructuras:ro
+
+    environment:
+      # En Docker siempre forzamos JSON logs (redundante con el ENV del
+      # Dockerfile, pero explícito).
+      - GUION_RUNTIME=docker
+      - LOG_FORMAT=json
+      - LOG_LEVEL=INFO
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+# Sin 'version' (Docker Compose v2+ ya no lo requiere y tira warning).
+# Sin networks/volumes top-level — usamos bind mounts del host para
+# persistencia simple. Migrar a volúmenes nombrados cuando se use Postgres.
