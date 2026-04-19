@@ -32,6 +32,9 @@ from pathlib import Path
 from typing import Optional
 
 import llm_provider  # webapp/llm_provider.py
+from observability import get_logger, bind_pipeline_context
+
+log = get_logger(__name__)
 
 
 # --- Configuración ----------------------------------------------------------
@@ -271,14 +274,25 @@ def run_full_pipeline(
         dict con 'output_dir' (Path), 'formato', 'estructura', 'duracion', 'escenas' (int).
     """
     if not llm_provider.is_available():
+        log.error("llm_unavailable", provider=llm_provider.PROVIDER)
         _emit(socketio, "error", "❌ LLM no disponible. Revisá .env y ANTHROPIC_API_KEY.")
         return {"error": "llm_unavailable"}
 
     t0 = time.time()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    pipeline_id = f"pipe-{timestamp}"
     out_dir = OUTPUT_DIR / timestamp
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    log.info(
+        "pipeline_start",
+        pipeline_id=pipeline_id,
+        idea_preview=idea[:120],
+        auto_detect=auto_detect,
+        formato_override=formato,
+        estructura_override=estructura,
+        model=llm_provider.CLAUDE_MODEL,
+    )
     _emit(socketio, "info", "🚀 Iniciando pipeline (Claude Haiku 4.5)…")
     _emit(socketio, "info", f"💡 Idea: {idea[:120]}")
     _emit(socketio, "info", f"📁 Proyecto: output/{timestamp}")
@@ -321,6 +335,15 @@ def run_full_pipeline(
         pass
 
     elapsed = int(time.time() - t0)
+    log.info(
+        "pipeline_complete",
+        pipeline_id=pipeline_id,
+        elapsed_s=elapsed,
+        formato=formato_final,
+        estructura=estructura_final,
+        scenes=len(escenas_paths),
+        output_dir=str(out_dir),
+    )
     _emit(socketio, "success", "✅ Pipeline completado")
     _emit(socketio, "success", f"⏱️  Tiempo: {elapsed}s")
     _emit(socketio, "success", f"📁 Proyecto: {out_dir.name}")

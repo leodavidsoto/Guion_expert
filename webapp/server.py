@@ -12,14 +12,24 @@ import platform
 from werkzeug.utils import secure_filename
 
 # --- LLM Provider (Claude Haiku 4.5 / Ollama) --------------------------------
-# Añadido: adaptador que permite usar Claude o Ollama según .env
+# Adaptador que permite usar Claude o Ollama según .env
 import llm_provider  # webapp/llm_provider.py
+
+# --- Logging estructurado (structlog) ----------------------------------------
+# Configurar ANTES de crear la app para que todos los logs salgan estructurados.
+from observability import configure_logging, get_logger, init_flask_logging
+configure_logging()
+log = get_logger(__name__)
+log.info("app_starting", model=llm_provider.CLAUDE_MODEL, provider=llm_provider.PROVIDER)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'guion-experts-secret'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
 app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
+
+# Inyecta trace_id por request + log start/end automático
+init_flask_logging(app)
 
 socketio = SocketIO(
     app, 
