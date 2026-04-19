@@ -11,6 +11,10 @@ import sys
 import platform
 from werkzeug.utils import secure_filename
 
+# --- LLM Provider (Claude Haiku 4.5 / Ollama) --------------------------------
+# Añadido: adaptador que permite usar Claude o Ollama según .env
+import llm_provider  # webapp/llm_provider.py
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'guion-experts-secret'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
@@ -55,10 +59,10 @@ def index():
 
 @app.route('/api/health')
 def health():
-    ollama_running = subprocess.run(['pgrep', 'ollama'], capture_output=True).returncode == 0
+    llm_status = llm_provider.provider_status()
     return jsonify({
         'status': 'ok',
-        'ollama': ollama_running,
+        'llm': llm_status,
         'connected_clients': connected_clients
     })
 
@@ -279,124 +283,96 @@ def generate():
     return jsonify({'status': 'started'})
 
 def run_pipeline_thread(idea, formato=None, estructura=None, auto_detect=True):
+    """
+    Corre el pipeline 100% en Python con Claude Haiku 4.5 (sin Ollama ni bash).
+    Tras completar, exporta automáticamente el proyecto a OpenMontage.
+    """
     try:
-        socketio.emit('log', {'type': 'info', 'message': '🚀 Iniciando pipeline...'})
-        socketio.emit('log', {'type': 'info', 'message': f'💡 Idea: {idea[:100]}'})
-        
-        if not auto_detect:
-            if formato:
-                socketio.emit('log', {'type': 'info', 'message': f'📺 Formato manual: {formato}'})
-            if estructura:
-                socketio.emit('log', {'type': 'info', 'message': f'📖 Estructura manual: {estructura}'})
-        
-        cmd = [str(BASE_DIR / "ejecutar.sh"), idea]
-        
-        env = os.environ.copy()
-        env['PYTHONUNBUFFERED'] = '1'
-        # env['TERM'] = 'xterm' # Removed to avoid interactive output issues
-        
-        if not auto_detect:
-            if formato:
-                env['FORCE_FORMATO'] = formato
-            if estructura:
-                env['FORCE_ESTRUCTURA'] = estructura
-        
-        socketio.emit('log', {'type': 'info', 'message': '⚙️  Ejecutando pipeline...'})
-        
-        try:
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                universal_newlines=True,
-                cwd=str(BASE_DIR),
-                env=env
-            )
-        except Exception as e:
-            socketio.emit('log', {'type': 'error', 'message': f'❌ Error iniciando proceso: {e}'})
-            return
-        
-        line_count = 0
-        timeout = 3600
-        start_time = time.time()
-        last_heartbeat = start_time
-        
-        while True:
-            elapsed = time.time() - start_time
-            if elapsed > timeout:
-                process.kill()
-                socketio.emit('log', {'type': 'error', 'message': '❌ Timeout: Proceso tomó más de 1 hora'})
-                break
-            
-            if time.time() - last_heartbeat > 30:
-                mins = int(elapsed / 60)
-                socketio.emit('log', {'type': 'info', 'message': f'💓 Activo: {mins} min - {line_count} líneas'})
-                last_heartbeat = time.time()
-            
-            line = process.stdout.readline()
-            
-            if not line:
-                if process.poll() is not None:
-                    break
-                time.sleep(0.1)
-                continue
-            
-            line = line.rstrip()
-            if line:
-                line_count += 1
-                
-                log_type = 'output'
-                if '✓' in line or 'OK' in line or 'completado' in line.lower() or 'success' in line.lower():
-                    log_type = 'success'
-                elif '✗' in line or 'ERROR' in line or 'error' in line.lower() or 'failed' in line.lower():
-                    log_type = 'error'
-                elif '→' in line or 'INFO' in line or '...' in line:
-                    log_type = 'info'
-                
-                socketio.emit('log', {'type': log_type, 'message': line})
-                
-                if line_count % 50 == 0:
-                    socketio.emit('log', {'type': 'info', 'message': f'📊 Progreso: {line_count} líneas'})
-        
-        try:
-            process.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            socketio.emit('log', {'type': 'error', 'message': '❌ El proceso no respondió'})
-        
-        if process.returncode == 0:
-            socketio.emit('log', {'type': 'success', 'message': '✅ Pipeline completado'})
-            socketio.emit('log', {'type': 'success', 'message': f'📁 Total: {line_count} líneas'})
-            
-            if OUTPUT_DIR.exists():
-                try:
-                    projects = sorted(
-                        [p for p in OUTPUT_DIR.iterdir() if p.is_dir() and not p.name.startswith('.')],
-                        key=lambda x: x.stat().st_mtime,
-                        reverse=True
-                    )
-                    if projects:
-                        latest = projects[0]
-                        socketio.emit('log', {'type': 'success', 'message': f'📂 Proyecto: {latest.name}'})
+        from pipeline_claude import run_full_pipeline  # webapp/pipeline_claude.py
 
-                        file_count = sum(1 for _ in latest.rglob('*') if _.is_file())
-                        socketio.emit('log', {'type': 'success', 'message': f'📄 Archivos: {file_count}'})
-                except Exception as e:
-                    print(f"Error: {e}")
-        else:
-            socketio.emit('log', {'type': 'error', 'message': f'❌ Error: {process.returncode}'})
-        
+        result = run_full_pipeline(
+            idea=idea,
+            socketio=socketio,
+            formato=formato,
+            estructura=estructura,
+            auto_detect=auto_detect,
+        )
+
+        if result.get("error"):
+            socketio.emit('generation_completed', {'returncode': 1, 'error': result["error"]})
+            return
+
+        project_dir = result["output_dir"]
+
+        # --- Bridge automático a OpenMontage ---
+        om_export = _maybe_export_to_openmontage(
+            project_dir=project_dir,
+            idea=idea,
+            formato=result.get("formato"),
+            duration_seconds=(result.get("duracion", 5) * 60) if result.get("duracion") else None,
+        )
+
         socketio.emit('generation_completed', {
-            'returncode': process.returncode,
-            'lines': line_count
+            'returncode': 0,
+            'project': str(project_dir.name),
+            'formato': result.get("formato"),
+            'estructura': result.get("estructura"),
+            'escenas': result.get("escenas"),
+            'openmontage': om_export,
         })
-        
+
     except Exception as e:
         socketio.emit('log', {'type': 'error', 'message': f'❌ Error: {str(e)}'})
         import traceback
         traceback.print_exc()
+        socketio.emit('generation_completed', {'returncode': 1, 'error': str(e)})
+
+
+def _maybe_export_to_openmontage(project_dir, idea, formato=None, duration_seconds=None):
+    """
+    Intenta exportar automáticamente a OpenMontage si el repo está junto a Guion_expert.
+    Devuelve dict con los paths o None si no hay OpenMontage disponible.
+    """
+    try:
+        # Busca OpenMontage junto al repo (sibling) o dentro de ESCRIBE
+        candidates = [
+            BASE_DIR.parent / "OpenMontage",
+            BASE_DIR.parent / "OpenMontage" / "OpenMontage",  # tolerar clon anidado
+        ]
+        openmontage_root = next((p for p in candidates if (p / "schemas" / "artifacts").exists()), None)
+        if openmontage_root is None:
+            socketio.emit('log', {'type': 'info', 'message': 'ℹ️  OpenMontage no encontrado — export omitido.'})
+            return None
+
+        socketio.emit('log', {'type': 'info', 'message': f'🎬 Exportando a OpenMontage ({openmontage_root.name})…'})
+
+        # Import tardío para no fallar si falta el paquete
+        sys.path.insert(0, str(BASE_DIR))
+        from bridge.openmontage_export import export_project_to_openmontage
+
+        brief_hint = {"idea": idea, "formato": formato}
+        if duration_seconds:
+            brief_hint["duration_seconds"] = duration_seconds
+
+        result = export_project_to_openmontage(
+            project_dir=project_dir,
+            openmontage_root=openmontage_root,
+            idea=idea,
+            brief_hint=brief_hint,
+        )
+
+        socketio.emit('log', {'type': 'success', 'message': f'✅ OpenMontage export: {result["project_root"].name}'})
+        socketio.emit('log', {'type': 'success', 'message': f'   📋 brief.json, script.json, scene_plan.json'})
+        socketio.emit('log', {'type': 'success', 'message': f'   🎞️  remotion-cuts.json (render sin API keys)'})
+
+        # Devolver rutas como strings para JSON
+        return {k: str(v) for k, v in result.items() if isinstance(v, Path)}
+
+    except Exception as e:
+        socketio.emit('log', {'type': 'error', 'message': f'⚠️  Export a OpenMontage falló: {e}'})
+        import traceback
+        traceback.print_exc()
+        return None
 
 @app.route('/api/expert/run', methods=['POST'])
 def run_expert():
@@ -440,29 +416,17 @@ def run_expert_thread(expert, input_text):
         
         prompt_content = prompt_path.read_text()
         full_input = f"{prompt_content}\n\nINPUT:\n{input_text}"
-        
-        cmd = ['ollama', 'run', model, full_input]
-        
-        process = subprocess.Popen(
-            cmd, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
-            text=True,
-            bufsize=1,
-            universal_newlines=True
-        )
-        
+
+        # LLM call vía adaptador (Claude Haiku 4.5 o Ollama según .env)
         result = ""
-        for line in iter(process.stdout.readline, ''):
-            if line:
-                result += line
+        for chunk in llm_provider.generate(model=model, prompt=full_input, stream=True):
+            if chunk:
+                result += chunk
                 socketio.emit('expert_update', {'expert': expert, 'content': result})
-        
-        process.wait()
-        
+
         socketio.emit('log', {'type': 'success', 'message': f'✅ {expert} completado'})
         socketio.emit('expert_completed', {'expert': expert, 'content': result})
-        
+
     except Exception as e:
         socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
 
@@ -505,30 +469,18 @@ def run_structure_thread(structure_id, input_text):
         model = APP_CONFIG.get('MODEL_ARQUITECTO', 'qwen2.5:14b')
         
         full_input = f"{prompt_content}\n\nESTRUCTURA: {structure_id}\n\nIDEA:\n{input_text}"
-        
-        cmd = ['ollama', 'run', model, full_input]
-        
-        process = subprocess.Popen(
-            cmd, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
-            text=True,
-            bufsize=1,
-            universal_newlines=True
-        )
-        
+
+        # LLM call vía adaptador
         result = ""
-        for line in iter(process.stdout.readline, ''):
-            if line:
-                result += line
-        
-        process.wait()
-        
-        if process.returncode == 0:
+        for chunk in llm_provider.generate(model=model, prompt=full_input, stream=True):
+            if chunk:
+                result += chunk
+
+        if result.strip():
             socketio.emit('log', {'type': 'success', 'message': f'✅ {structure_id} generada'})
             socketio.emit('structure_result', {'structure_id': structure_id, 'content': result})
         else:
-            socketio.emit('log', {'type': 'error', 'message': '❌ Error'})
+            socketio.emit('log', {'type': 'error', 'message': '❌ Respuesta vac\u00eda del modelo'})
         
     except Exception as e:
         socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
@@ -563,55 +515,29 @@ def run_flow_thread(scene_content, output_format='text'):
         model = APP_CONFIG.get('MODEL_DIRECTOR_FLOW', 'qwen2.5:14b')
         
         full_input = f"{prompt_content}\n\nESCENA:\n{scene_content}"
-        
-        cmd = ['ollama', 'run', model, full_input]
-        
-        process = subprocess.Popen(
-            cmd, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
-            text=True,
-            bufsize=1,
-            universal_newlines=True
-        )
-        
+
+        # LLM call vía adaptador
         result = ""
-        for line in iter(process.stdout.readline, ''):
-            if line:
-                result += line
-                # Emitir chunk si es texto plano, si es JSON esperamos al final para validar
+        for chunk in llm_provider.generate(model=model, prompt=full_input, stream=True):
+            if chunk:
+                result += chunk
                 if output_format == 'text':
-                    socketio.emit('flow_chunk', {'content': line})
-        
-        process.wait()
-        
-        if process.returncode == 0:
+                    socketio.emit('flow_chunk', {'content': chunk})
+
+        if result.strip():
             final_result = result
             if output_format == 'json':
-                # Limpiar markdown si existe
                 final_result = result.replace('```json', '').replace('```', '').strip()
                 try:
-                    # Validar JSON
                     json.loads(final_result)
                 except json.JSONDecodeError:
-                    socketio.emit('log', {'type': 'warning', 'message': '⚠️ El modelo no generó JSON válido, enviando texto crudo'})
-            
-            socketio.emit('log', {'type': 'success', 'message': '✅ Tabla Flow generada'})
+                    socketio.emit('log', {'type': 'warning', 'message': '\u26a0\ufe0f El modelo no gener\u00f3 JSON v\u00e1lido, enviando texto crudo'})
+
+            socketio.emit('log', {'type': 'success', 'message': '\u2705 Tabla Flow generada'})
             socketio.emit('flow_completed', {'tabla': final_result, 'format': output_format})
         else:
-            socketio.emit('log', {'type': 'error', 'message': '❌ Error'})
-        
-    except Exception as e:
-        socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
-        
-        process.wait()
-        
-        if process.returncode == 0:
-            socketio.emit('log', {'type': 'success', 'message': '✅ Tabla Flow generada'})
-            socketio.emit('flow_completed', {'tabla': result})
-        else:
-            socketio.emit('log', {'type': 'error', 'message': '❌ Error'})
-        
+            socketio.emit('log', {'type': 'error', 'message': '\u274c Respuesta vac\u00eda del modelo'})
+
     except Exception as e:
         socketio.emit('log', {'type': 'error', 'message': f'Error: {str(e)}'})
 
@@ -715,6 +641,62 @@ def run_analysis_thread(filepath):
 def get_model_config():
     """Return current model configuration"""
     return jsonify(APP_CONFIG)
+
+@app.route('/api/openmontage/export/<project_id>', methods=['POST'])
+def export_to_openmontage(project_id):
+    """
+    Exporta manualmente un proyecto existente de Guion_expert a OpenMontage.
+    """
+    try:
+        project_dir = OUTPUT_DIR / project_id
+        if not project_dir.exists() or not project_dir.is_dir():
+            return jsonify({'error': f'Proyecto {project_id} no existe'}), 404
+
+        # Localizar OpenMontage como sibling
+        candidates = [
+            BASE_DIR.parent / "OpenMontage",
+            BASE_DIR.parent / "OpenMontage" / "OpenMontage",
+        ]
+        openmontage_root = next((p for p in candidates if (p / "schemas" / "artifacts").exists()), None)
+        if openmontage_root is None:
+            return jsonify({'error': 'OpenMontage no está clonado junto al proyecto'}), 400
+
+        sys.path.insert(0, str(BASE_DIR))
+        from bridge.openmontage_export import export_project_to_openmontage
+
+        # Best-effort: leer idea del concepto
+        concepto = project_dir / "concepto" / "result.txt"
+        idea = concepto.read_text(encoding='utf-8').splitlines()[0] if concepto.exists() else project_id
+
+        result = export_project_to_openmontage(
+            project_dir=project_dir,
+            openmontage_root=openmontage_root,
+            idea=idea,
+        )
+        return jsonify({
+            'status': 'ok',
+            'project_root': str(result['project_root']),
+            'artifacts': {k: str(v) for k, v in result.items() if isinstance(v, Path)},
+            'title': result.get('title'),
+            'num_scenes': result.get('num_scenes'),
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/openmontage/status')
+def openmontage_status():
+    """Indica si OpenMontage está disponible como sibling."""
+    candidates = [
+        BASE_DIR.parent / "OpenMontage",
+        BASE_DIR.parent / "OpenMontage" / "OpenMontage",
+    ]
+    found = next((p for p in candidates if (p / "schemas" / "artifacts").exists()), None)
+    return jsonify({
+        'available': found is not None,
+        'path': str(found) if found else None,
+    })
 
 @socketio.on('connect')
 def handle_connect():

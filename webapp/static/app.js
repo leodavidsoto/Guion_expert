@@ -497,8 +497,16 @@ function initSocketListeners() {
         if (data.returncode === 0) {
             addLog('success', '✅ Generación completada exitosamente');
             loadProjects(); // Recargar lista de proyectos
+
+            // Si el export a OpenMontage se realizó, mostrar botones de acción
+            if (data.openmontage && data.openmontage.project_root) {
+                renderOpenMontageActions(data.openmontage);
+            } else if (data.project) {
+                // Sin OpenMontage auto-export: ofrecer export manual
+                renderOpenMontageExportButton(data.project);
+            }
         } else {
-            addLog('error', '❌ Error en la generación');
+            addLog('error', `❌ Error en la generación: ${data.error || 'desconocido'}`);
         }
     });
 
@@ -916,4 +924,88 @@ function downloadFlowJson() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+// --- OpenMontage bridge UI ------------------------------------------------
+
+function renderOpenMontageActions(om) {
+    const consoleEl = document.getElementById('logConsole');
+    if (!consoleEl) return;
+
+    const box = document.createElement('div');
+    box.className = 'log-line log-success';
+    box.style.cssText = 'margin-top:12px; padding:12px; border:1px solid #22D3EE; border-radius:8px; background:rgba(34,211,238,0.06);';
+    box.innerHTML = `
+        <div style="font-weight:600; margin-bottom:6px;">🎬 OpenMontage — listo</div>
+        <div style="font-size:12px; opacity:0.85; margin-bottom:8px;">
+            Proyecto: <code>${om.project_root.split('/').pop()}</code><br>
+            Brief + Script + Scene Plan generados (schemas oficiales)
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="copyToClipboard('${(om.cuts || '').replace(/'/g, "\\'")}')">
+                📋 Copiar ruta cuts.json
+            </button>
+            <button class="btn btn-secondary" onclick="openOpenMontageInstructions('${om.project_root.replace(/'/g, "\\'")}')">
+                📖 Cómo renderizar
+            </button>
+        </div>
+    `;
+    consoleEl.appendChild(box);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function renderOpenMontageExportButton(projectId) {
+    const consoleEl = document.getElementById('logConsole');
+    if (!consoleEl || !projectId) return;
+    const box = document.createElement('div');
+    box.className = 'log-line log-info';
+    box.style.cssText = 'margin-top:8px;';
+    box.innerHTML = `
+        <button class="btn btn-secondary" onclick="manualExportOpenMontage('${projectId}')">
+            🎬 Exportar a OpenMontage
+        </button>
+    `;
+    consoleEl.appendChild(box);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+async function manualExportOpenMontage(projectId) {
+    addLog('info', `🎬 Exportando ${projectId} a OpenMontage…`);
+    try {
+        const response = await fetch(`/api/openmontage/export/${projectId}`, { method: 'POST' });
+        const data = await response.json();
+        if (data.status === 'ok') {
+            addLog('success', `✅ Exportado: ${data.project_root.split('/').pop()}`);
+            renderOpenMontageActions({
+                project_root: data.project_root,
+                cuts: data.artifacts && data.artifacts.cuts,
+            });
+        } else {
+            addLog('error', `❌ ${data.error || 'export falló'}`);
+        }
+    } catch (e) {
+        addLog('error', `❌ ${e.message}`);
+    }
+}
+
+function copyToClipboard(text) {
+    if (!text) return;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        addLog('success', `📋 Copiado: ${text}`);
+    } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        addLog('success', `📋 Copiado`);
+    }
+}
+
+function openOpenMontageInstructions(projectRoot) {
+    const cmd = `cd "${projectRoot.replace('/projects/', '/').replace(/\/[^/]+$/, '')}" && python render_demo.py --props "${projectRoot}/remotion-cuts.json"`;
+    const msg = `Para renderizar con Remotion (zero-key):\n\n${cmd}\n\nO abrí OpenMontage en Claude Code / Cursor y pedile continuar el pipeline desde el 'stages/' del proyecto.`;
+    alert(msg);
 }
