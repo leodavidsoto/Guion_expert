@@ -637,9 +637,11 @@ def _synthesize_flux_prompt(visual: dict, motion: dict) -> str:
     if lighting:
         parts.append("lighting: " + lighting)
 
-    textures = (visual.get("textures") or "").strip()
-    if textures:
-        parts.append("textures: " + textures)
+    textures = visual.get("textures") or []
+    if isinstance(textures, list) and textures:
+        parts.append("textures: " + ", ".join(str(t) for t in textures if t))
+    elif isinstance(textures, str) and textures.strip():
+        parts.append("textures: " + textures.strip())
 
     style = (visual.get("style") or "").strip()
     if style:
