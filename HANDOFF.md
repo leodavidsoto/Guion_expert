@@ -170,10 +170,22 @@ Consumido en `webapp/config.py::Settings.params_for(role)` → `llm_provider.gen
 - Alineación verificada: todos los values de `VIDEO_MODEL_ROUTING` están en
   `FAL_MODEL_IDS` keys.
 
-### Commit 10 — `webapp/integrations/suno.py` + docker-compose suno-api service
-- Cliente para `gcui-art/suno-api` (self-hosted): `generate(prompt, make_instrumental, duration) -> audio_url`.
-- Agregar servicio `suno-api` al `docker-compose.yml` con el container oficial de `gcui-art/suno-api`, pasando `SUNO_COOKIE` vía env.
-- Volumen compartido para cache de audio.
+### ✅ Commit 10 — `webapp/integrations/suno.py` + compose suno-api (pending commit)
+`SunoClient` auth via cookie (no Bearer), 13 sync + 6 async methods.
+- Endpoints: `/api/custom_generate`, `/api/generate`, `/api/get`,
+  `/api/get_limit`.
+- `generate_song()` → submit + poll + `select_best()` (variante con mayor
+  duration_s). Poll cap 10min, intervalo 5s default.
+- `SunoClip` dataclass con `is_complete`/`is_streaming`/`is_failed`.
+  `from_api()` tolera 3 formatos de response de gcui-art/suno-api.
+- Excepciones: `SunoClipFailed`, `SunoTimeout`.
+- `docker-compose.yml` con servicio `suno-api` buildeado desde `./suno-api/`
+  (user clona gcui-art/suno-api como side-car antes del primer `up`).
+  Healthcheck `wget /api/get_limit`. `guion-web.depends_on` = suno-api
+  healthy.
+- Config: `suno_cookie` (SecretStr), `suno_api_url`, `suno_model`,
+  `suno_poll_interval_s`, `suno_poll_max_wait_s`,
+  `suno_default_instrumental`.
 
 ### Commit 11 — `bridge/asset_generator.py` (orquestador)
 Script que consume `scene_plan.json` (con `master_stack` block) y dispara en paralelo:
@@ -193,13 +205,13 @@ Script que consume `scene_plan.json` (con `master_stack` block) y dispara en par
 
 En la próxima sesión de Claude Code / Cowork, empezar con:
 
-> "Leí `HANDOFF.md`. Vamos con **Commit 10** (`webapp/integrations/suno.py` + `docker-compose.yml` con `suno-api` service self-hosted de `gcui-art/suno-api`)."
+> "Leí `HANDOFF.md`. Vamos con **Commit 11** — `bridge/asset_generator.py`, el orquestador que consume `scene_plan.json` con `master_stack` y dispara FLUX LoRA training (una vez) + FLUX+I2V por escena (paralelo con asyncio.gather) + Suno música + mmaudio SFX + Real-ESRGAN si `upscale_with` está seteado. Escribe `resolved_assets` de vuelta al scene_plan."
 
 La sesión nueva debe:
 1. Leer `HANDOFF.md`, `CLAUDE.md`, `CHANGELOG.md`.
-2. Confirmar con `git log --oneline -10` que los últimos commits están en la rama (7, 7.1, 8, 9).
-3. Leer `webapp/integrations/fal.py` como referencia (queue-based pattern, sync+async parity, auth via `Authorization: Key <key>`).
-4. Proceder con Commit 10 — el cliente Suno sigue otro pattern (request-based, POST /api/custom_generate con polling por clip_id), no queue.
+2. Confirmar con `git log --oneline -10` que los últimos commits están en la rama (7, 7.1, 8, 9, 10).
+3. Leer `webapp/integrations/fal.py` (queue pattern) + `webapp/integrations/suno.py` (cookie + poll pattern) como referencia.
+4. Proceder con Commit 11. El bridge sigue siendo **sin LLM calls** — es puro I/O + orquestación.
 
 ---
 

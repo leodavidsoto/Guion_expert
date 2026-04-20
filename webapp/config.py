@@ -147,6 +147,36 @@ class Settings(BaseSettings):
     real_esrgan_scale: int = Field(default=2, ge=1, le=4)
     rife_target_fps: int = Field(default=60, ge=24, le=120)
 
+    # --- Suno (gcui-art/suno-api self-hosted) ---
+    suno_cookie: SecretStr = Field(
+        default=SecretStr(""),
+        description="Cookie completa de suno.com (Premium). Pasada al "
+        "container suno-api como env var. Se refresca cada ~24h según "
+        "lo que dure la sesión.",
+    )
+    suno_api_url: str = Field(
+        default="http://suno-api:3000",
+        description="URL del servicio suno-api dentro de la red docker. "
+        "Para dev local corriendo fuera de compose: http://localhost:3000.",
+    )
+    suno_model: str = Field(
+        default="chirp-v3-5",
+        description="Modelo de Suno. Opciones: chirp-v3-0, chirp-v3-5, "
+        "chirp-v4. v3-5 = mejor balance calidad/velocidad.",
+    )
+    suno_poll_interval_s: float = Field(default=5.0, ge=1.0, le=60.0)
+    suno_poll_max_wait_s: float = Field(
+        default=600.0,
+        ge=60.0,
+        description="Cap de espera para Suno (s). 10min default; una canción "
+        "de 3-4min típicamente termina en 60-120s.",
+    )
+    suno_default_instrumental: bool = Field(
+        default=False,
+        description="Si True, toda generación arranca en modo instrumental "
+        "por default (useful para reels sin letra).",
+    )
+
     # --- HTTP client (integrations/base.py) ---
     http_timeout_connect: float = Field(
         default=10.0,

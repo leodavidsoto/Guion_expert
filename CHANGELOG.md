@@ -5,6 +5,45 @@
 Migración a **Claude Haiku 4.5** y hardening para producción en Hetzner CX22.
 Ver `HANDOFF.md` para contexto completo.
 
+### Commit 10 — `pending` (2026-04-20)
+**feat(integrations/suno): SunoClient self-hosted + docker-compose side-car**
+
+- **`webapp/integrations/suno.py`** — cliente para `gcui-art/suno-api`
+  self-hosted (reverse-proxy a suno.com con cookie de sesión Premium).
+  Heredando de `BaseHTTPClient` con auth via `Cookie:` header en vez de
+  Bearer. 13 sync + 6 async methods.
+  - **Endpoints**: `/api/custom_generate`, `/api/generate`, `/api/get`,
+    `/api/get_limit`.
+  - **Flujo**: `submit_custom()` → devuelve 2 clips (variants) con `id`
+    pero sin `audio_url` → `wait_for_clips()` poll con interval 5s →
+    clips completos con mp3.
+  - **`generate_song()` / `agenerate_song()`** — submit + wait + selección
+    del mejor clip (`select_best()` = clip con mayor `duration_s`).
+  - **`SunoClip` dataclass** — con `is_complete`, `is_streaming`,
+    `is_failed` properties y `from_api()` parser que tolera los 3
+    formatos que devuelve gcui-art/suno-api (list directo, `{data:[]}`,
+    `{clips:[]}`).
+  - **Excepciones**: `SunoClipFailed` (status=error/failed),
+    `SunoTimeout` (excedió poll cap 10min default).
+  - `wait_for_streaming=True` opcional — devuelve al obtener el parcial
+    streaming (20-30s de audio) para preview rápido. Por default esperamos
+    a `complete` para evitar audio corrupto.
+- **`docker-compose.yml`** — agregado servicio `suno-api`:
+  - Build desde `./suno-api/` (user clona `gcui-art/suno-api` como
+    side-car antes del primer `up`).
+  - Env: `SUNO_COOKIE` desde .env, `SUNO_COOKIE_REFRESH_INTERVAL=5min`
+    para mantener sesión viva.
+  - Healthcheck: `wget /api/get_limit` — si responde 200, la cookie está
+    viva.
+  - `guion-web.depends_on.suno-api.condition=service_healthy` para que
+    el pipeline no arranque si Suno no está listo.
+- **Config**: agregados `suno_cookie` (SecretStr), `suno_api_url`,
+  `suno_model`, `suno_poll_interval_s`, `suno_poll_max_wait_s`,
+  `suno_default_instrumental`.
+- **`.env.example`** — instrucciones de setup (clonar gcui-art/suno-api
+  como submódulo, extraer cookie de DevTools).
+- Smoke: py_compile + yaml.safe_load validan ambas piezas.
+
 ### Commit 9 — `pending` (2026-04-20)
 **feat(integrations/fal): FalClient unified para FLUX/Kling/Runway/WAN/mmaudio/ESRGAN/TTS**
 

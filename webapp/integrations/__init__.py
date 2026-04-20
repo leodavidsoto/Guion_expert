@@ -26,6 +26,12 @@ from webapp.integrations.fal import (
     FalJobResult,
     FalJobTimeout,
 )
+from webapp.integrations.suno import (
+    SunoClient,
+    SunoClip,
+    SunoClipFailed,
+    SunoTimeout,
+)
 
 __all__ = [
     # base
@@ -39,4 +45,9 @@ __all__ = [
     "FalJobFailed",
     "FalJobTimeout",
     "FAL_MODEL_IDS",
+    # suno
+    "SunoClient",
+    "SunoClip",
+    "SunoClipFailed",
+    "SunoTimeout",
 ]
