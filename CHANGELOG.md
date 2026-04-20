@@ -5,6 +5,59 @@
 Migración a **Claude Haiku 4.5** y hardening para producción en Hetzner CX22.
 Ver `HANDOFF.md` para contexto completo.
 
+### Commit 11 — `pending` (2026-04-20)
+**feat(bridge/asset_generator): orquestador FLUX → I2V → mmaudio → Suno**
+
+- **`bridge/asset_generator.py`** (~580 líneas) — la pieza final del
+  pipeline v2: lee `scene_plan.json` con `master_stack` poblado y
+  resuelve todos los `required_assets` contra fal.ai + Suno, escribiendo
+  `resolved_assets` in-place (atómico via `.tmp → rename`).
+  - **Pipeline por escena**: FLUX (con LoRA si disponible) → I2V
+    (routing desde `master_stack.chosen_video_model`) → mmaudio SFX
+    (opcional, `--no-sfx` para saltarlo) → Real-ESRGAN upscale
+    (solo si `post_production.upscale_with` está seteado).
+  - **Música del hero**: paralelizada con las escenas. Usa
+    `metadata.hero_scene_id` o la primera escena con `hero_moment=True`.
+    Suno prompt = `master_stack.sonic.music_brief`, tags =
+    `music_reference_artists`, title = `3SM — <narrative_beat>`.
+  - **Paralelización**: `asyncio.gather` + `asyncio.Semaphore(concurrency)`
+    para escenas; música Suno corre en paralelo con las escenas.
+  - **`BudgetTracker`** — reserva costo ANTES de submit a fal. Si la suma
+    excede `max_budget_usd`, levanta `BudgetExceeded` y aborta antes de
+    pagar. Tabla `COST_USD` con precios aprox de fal.ai (2026-Q2).
+  - **LoRA training**: `train_lora_if_needed()` — si `FLUX_LORA_URL`
+    vacío y se pasa `--lora-images <zip_url>`, entrena 1000 steps (~$1.50,
+    4-8min). Si `FLUX_LORA_URL` ya está seteado, cache hit (skip).
+  - **Prompt synthesis**: `_synthesize_flux_prompt()` combina
+    `visual_anchor.{subject_description,composition,palette,lighting,
+    textures,style}` + trigger word; `_synthesize_i2v_prompt()` combina
+    `motion_intent.{action,physics_notes}` + `camera.movement`;
+    `_synthesize_sfx_prompt()` combina `sonic.{sfx,diegetic_sound}`.
+  - **Dataclasses output**: `ResolvedAsset` (type/phase/generator/url/
+    cost_usd/elapsed_s) y `SceneAssetBundle` (scene_id + assets + error).
+    Se serializan a JSON compacto (sin `raw` payload verboso).
+  - **Atomicidad**: escribe a `scene_plan.json.tmp` primero, `os.replace`
+    al final. Si Python crashea o budget se excede, el JSON original no
+    se corrompe.
+  - **CLI**: `python -m bridge.asset_generator <scene_plan.json> --budget
+    3.00 --concurrency 2 [--no-sfx] [--no-music] [--lora-images <url>]
+    [--force-train-lora] [--dry-run]`. `--dry-run` imprime estimación de
+    costo total sin pegarle a la red.
+- **Excepción explícita al acople bridge↔webapp**: este módulo importa
+  de `webapp.integrations.{fal,suno}` + `webapp.config`, rompiendo la
+  regla "bridge no depende de webapp". Es el único módulo con ese
+  privilegio, documentado en su docstring — se justifica porque es el
+  puente que ejecuta la tubería completa y necesita todos los clientes.
+- **Lazy import en `bridge/__init__.py`**: `asset_generator` se importa
+  con try/except para que contenedores mínimos (que solo corren el
+  export a OpenMontage) no crasheen por falta de httpx/structlog.
+- **Config**: agregados `openmontage_root`, `max_budget_usd`,
+  `max_scenes_per_project`.
+- **Verificación**: py_compile + smoke test con stubs de webapp/structlog
+  exponen `plan_cost_estimate` sobre el scene_plan real de `20260420_*`
+  (6 escenas) → total $2.52 con LoRA+SFX, $2.34 sin LoRA ni SFX. Budget
+  tracker raises correctamente cuando se intenta sobre-gastar.
+
 ### Commit 10 — `pending` (2026-04-20)
 **feat(integrations/suno): SunoClient self-hosted + docker-compose side-car**
 

@@ -187,11 +187,35 @@ Consumido en `webapp/config.py::Settings.params_for(role)` → `llm_provider.gen
   `suno_poll_interval_s`, `suno_poll_max_wait_s`,
   `suno_default_instrumental`.
 
-### Commit 11 — `bridge/asset_generator.py` (orquestador)
-Script que consume `scene_plan.json` (con `master_stack` block) y dispara en paralelo:
-- Para cada escena: FLUX (Fase 1) → I2V elegido por routing (Fase 2) → mmaudio SFX → Real-ESRGAN si `upscale_with=real_esrgan` (Fase 3).
-- Para toda la película: Suno (música desde `sonic.music_brief`) → crossfade + mix según `silence_moments`.
-- Escribe todos los URLs de assets de vuelta al `scene_plan.json` en el campo `resolved_assets`.
+### Commit 11 — `bridge/asset_generator.py` (orquestador) ✅ DONE (pending commit)
+Orquestador de ~580 líneas que consume `scene_plan.json` con `master_stack` y:
+- **Por escena (asyncio.gather + Semaphore(concurrency))**: FLUX (+LoRA
+  opcional) → I2V (routing determinístico desde `chosen_video_model`) →
+  mmaudio SFX (`--no-sfx` para saltar) → Real-ESRGAN si
+  `post_production.upscale_with` está seteado.
+- **Hero music (paralelo a escenas)**: Suno con
+  `sonic.music_brief` + `music_reference_artists` para la escena marcada
+  `hero_moment`. `--no-music` para saltar.
+- **Budget tracker** (`BudgetTracker`): reserva costo ANTES de submit,
+  levanta `BudgetExceeded` si la suma pasaría el cap. Tabla `COST_USD`
+  con precios aprox 2026-Q2 de fal.ai.
+- **LoRA training** (`train_lora_if_needed`): cache via `FLUX_LORA_URL`
+  en .env; entrena una vez con `--lora-images <zip_url>` si hace falta
+  (~$1.50, 4-8min).
+- **Atomicidad**: escribe `.tmp` → `os.replace` → no corrompe scene_plan
+  si crashea.
+- **CLI**: `python -m bridge.asset_generator <scene_plan.json> --budget
+  3.00 --concurrency 2 [--no-sfx] [--no-music] [--lora-images <url>]
+  [--dry-run]`. Dry-run = estimación sin red.
+- **Excepción al acople**: único módulo en `bridge/` que importa de
+  `webapp.integrations` + `webapp.config`. Documentado en docstring.
+- **Lazy import en `bridge/__init__.py`** (try/except ImportError) para
+  que contenedores sin httpx/structlog sigan pudiendo hacer export a
+  OpenMontage.
+- **Config nuevo**: `openmontage_root`, `max_budget_usd`,
+  `max_scenes_per_project`.
+- Verificación offline: py_compile OK; `plan_cost_estimate` sobre el
+  scene_plan real de `20260420_034929` (6 escenas) → $2.52 con LoRA+SFX.
 
 ### Deploy Final
 1. PR `feature/llm-provider-unified` → `main`.
@@ -205,13 +229,20 @@ Script que consume `scene_plan.json` (con `master_stack` block) y dispara en par
 
 En la próxima sesión de Claude Code / Cowork, empezar con:
 
-> "Leí `HANDOFF.md`. Vamos con **Commit 11** — `bridge/asset_generator.py`, el orquestador que consume `scene_plan.json` con `master_stack` y dispara FLUX LoRA training (una vez) + FLUX+I2V por escena (paralelo con asyncio.gather) + Suno música + mmaudio SFX + Real-ESRGAN si `upscale_with` está seteado. Escribe `resolved_assets` de vuelta al scene_plan."
+> "Leí `HANDOFF.md`. Con Commit 11 landeado, hacemos dos cosas: (1) PR
+> `feature/llm-provider-unified` → `main`, (2) deploy a Hetzner CX22.
+> Antes del PR quiero un end-to-end dry-run del asset_generator sobre el
+> scene_plan de `20260420_034929` para validar el routing y el budget
+> real contra fal.ai (con `--dry-run` primero para ver el costo)."
 
 La sesión nueva debe:
 1. Leer `HANDOFF.md`, `CLAUDE.md`, `CHANGELOG.md`.
-2. Confirmar con `git log --oneline -10` que los últimos commits están en la rama (7, 7.1, 8, 9, 10).
-3. Leer `webapp/integrations/fal.py` (queue pattern) + `webapp/integrations/suno.py` (cookie + poll pattern) como referencia.
-4. Proceder con Commit 11. El bridge sigue siendo **sin LLM calls** — es puro I/O + orquestación.
+2. Confirmar con `git log --oneline -12` que los últimos commits están en la rama (7, 7.1, 8, 9, 10, 11).
+3. Correr `python -m bridge.asset_generator <path>/stages/scene_plan.json --dry-run` — debería imprimir el cost estimate sin pegar a la red.
+4. Si `FAL_API_KEY` está en `.env`, correr sin `--dry-run` con
+   `--budget 3.00 --no-music` (primero sin música para probar solo
+   fal.ai) sobre un scene_plan de 2-3 escenas para humear el loop real.
+5. Abrir PR → `main` y hacer deploy al VPS.
 
 ---
 

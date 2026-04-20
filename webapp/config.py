@@ -177,6 +177,24 @@ class Settings(BaseSettings):
         "por default (useful para reels sin letra).",
     )
 
+    # --- OpenMontage bridge / asset_generator ---
+    openmontage_root: str = Field(
+        default="",
+        description="Root del repo OpenMontage en disco. Vacío = se pasa "
+        "explícitamente al bridge/asset_generator en cada llamada.",
+    )
+    max_budget_usd: float = Field(
+        default=5.0,
+        ge=0.5,
+        description="Budget tope en USD por proyecto. asset_generator aborta "
+        "si supera este número antes de terminar.",
+    )
+    max_scenes_per_project: int = Field(
+        default=30,
+        ge=1,
+        description="Límite defensivo de escenas procesables por run.",
+    )
+
     # --- HTTP client (integrations/base.py) ---
     http_timeout_connect: float = Field(
         default=10.0,
