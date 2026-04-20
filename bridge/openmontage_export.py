@@ -45,26 +45,42 @@ from typing import Any, Optional
 # ───────────────────────── Constantes / mapeos ─────────────────────────────
 
 FORMATO_A_PLATAFORMA: dict[str, str] = {
+    # Formatos sociales canónicos (clasificador 2026)
+    "REEL_INSTAGRAM": "instagram",
+    "YOUTUBE_SHORT": "youtube",
+    "STORY": "instagram",
+    "AD_SPOT": "generic",
+    # Alias legacy
     "REEL": "instagram",
     "INSTAGRAM": "instagram",
     "TIKTOK": "tiktok",
     "SHORT": "youtube",
-    "YOUTUBE_SHORT": "youtube",
     "YOUTUBE": "youtube",
+    # Formatos largos y educativos
+    "TUTORIAL": "youtube",
+    "EXPLAINER": "youtube",
     "VIDEOCLIP": "generic",
     "COMERCIAL": "generic",
-    "CORTO": "youtube",
-    "MEDIO": "youtube",
-    "LARGO": "youtube",
+    "CORTO": "generic",
+    "MEDIO": "generic",
+    "LARGO": "generic",
 }
 
 # Duración por defecto (segundos) si la clasificación no la provee o es incoherente
 FORMATO_A_DURACION_SEG: dict[str, float] = {
+    # Formatos sociales canónicos
+    "REEL_INSTAGRAM": 45.0,
+    "YOUTUBE_SHORT": 60.0,
+    "STORY": 15.0,
+    "AD_SPOT": 30.0,
+    # Alias legacy
     "REEL": 30.0,
     "INSTAGRAM": 30.0,
-    "TIKTOK": 30.0,
+    "TIKTOK": 60.0,
     "SHORT": 45.0,
-    "YOUTUBE_SHORT": 45.0,
+    # Formatos de catálogo
+    "TUTORIAL": 300.0,
+    "EXPLAINER": 180.0,
     "VIDEOCLIP": 180.0,
     "COMERCIAL": 30.0,
     "CORTO": 300.0,
@@ -72,13 +88,27 @@ FORMATO_A_DURACION_SEG: dict[str, float] = {
     "LARGO": 3600.0,
 }
 
+# Límite superior defensivo por formato (si clasificación trae valores absurdos).
+FORMATO_MAX_DURACION_SEG: dict[str, float] = {
+    "STORY": 30.0,
+    "YOUTUBE_SHORT": 180.0,
+    "REEL_INSTAGRAM": 180.0,
+    "TIKTOK": 600.0,
+    "AD_SPOT": 120.0,
+}
+
 # Pipeline recomendada en OpenMontage por formato
 FORMATO_A_PIPELINE: dict[str, str] = {
+    "REEL_INSTAGRAM": "cinematic",
+    "YOUTUBE_SHORT": "cinematic",
+    "STORY": "cinematic",
+    "AD_SPOT": "cinematic",
+    "TUTORIAL": "cinematic",
+    "EXPLAINER": "cinematic",
     "REEL": "cinematic",
     "INSTAGRAM": "cinematic",
     "TIKTOK": "cinematic",
     "SHORT": "cinematic",
-    "YOUTUBE_SHORT": "cinematic",
     "VIDEOCLIP": "cinematic",
     "COMERCIAL": "cinematic",
     "CORTO": "cinematic",
@@ -96,11 +126,16 @@ DEFAULT_PLAYBOOKS: tuple[str, ...] = (
 
 # Heurística de playbook en función del formato
 FORMATO_A_PLAYBOOK: dict[str, str] = {
+    "REEL_INSTAGRAM": "flat-motion-graphics",
+    "YOUTUBE_SHORT": "flat-motion-graphics",
+    "STORY": "flat-motion-graphics",
+    "AD_SPOT": "clean-professional",
+    "TUTORIAL": "clean-professional",
+    "EXPLAINER": "clean-professional",
     "REEL": "flat-motion-graphics",
     "INSTAGRAM": "flat-motion-graphics",
     "TIKTOK": "flat-motion-graphics",
     "SHORT": "flat-motion-graphics",
-    "YOUTUBE_SHORT": "flat-motion-graphics",
     "VIDEOCLIP": "flat-motion-graphics",
     "COMERCIAL": "clean-professional",
     "CORTO": "clean-professional",
@@ -125,10 +160,17 @@ SHOT_SIZE_SYNONYMS: dict[str, str] = {
     "over-shoulder": "over_shoulder",
     "sobre el hombro": "over_shoulder",
     # English (usado por el prompt VEO en tipo_plano)
+    "extreme_wide": "extreme_wide",
+    "wide": "wide",
+    "medium_wide": "medium_wide",
+    "medium": "medium",
+    "medium_close": "medium_close",
+    "close_up": "close_up",
+    "extreme_close_up": "extreme_close_up",
+    "over_shoulder": "over_shoulder",
     "extreme wide": "extreme_wide",
     "extreme wide shot": "extreme_wide",
     "wide shot": "wide",
-    "wide": "wide",
     "medium wide": "medium_wide",
     "medium shot": "medium",
     "medium close": "medium_close",
@@ -145,12 +187,18 @@ CAMERA_MOVEMENT_SYNONYMS: dict[str, str] = {
     # Master Stack v2 (underscore — match directo con el schema Pydantic)
     "dolly_in": "dolly_in",
     "dolly_out": "dolly_out",
+    "truck_left": "tracking_left",
+    "truck_right": "tracking_right",
+    "tracking": "tracking_left",
     "tracking_left": "tracking_left",
     "tracking_right": "tracking_right",
     "pan_left": "pan_left",
     "pan_right": "pan_right",
     "tilt_up": "tilt_up",
     "tilt_down": "tilt_down",
+    "handheld": "handheld",
+    "orbit_left": "orbital",
+    "orbit_right": "orbital",
     "zoom_in": "zoom_in",
     "zoom_out": "zoom_out",
     "whip_pan": "whip_pan",
@@ -290,7 +338,13 @@ def _first_nonempty(*values: Any) -> str:
 # ───────────────────────── Parsers de Guion_expert ─────────────────────────
 
 def _parse_classification_file(path: Path) -> dict:
-    out = {"formato": "CORTO", "estructura": "THREE_ACT", "duracion_min": 0.0, "justificaciones": []}
+    out = {
+        "formato": "CORTO",
+        "estructura": "THREE_ACT",
+        "duracion_min": 0.0,
+        "duracion_seg": 0.0,
+        "justificaciones": [],
+    }
     if not path.exists():
         return out
     for raw in path.read_text(encoding="utf-8").splitlines():
@@ -310,9 +364,29 @@ def _parse_classification_file(path: Path) -> dict:
             except ValueError:
                 pass
             continue
+        m = re.match(r"DURACION_SEGUNDOS\s*:\s*([\d\.]+)", line, re.I)
+        if m:
+            try:
+                out["duracion_seg"] = float(m.group(1))
+            except ValueError:
+                pass
+            continue
         if line.upper().startswith("JUSTIFICACION"):
             out["justificaciones"].append(line)
     return out
+
+
+def _normalize_formato(formato: str) -> str:
+    """Normaliza alias legacy al set canónico usado por el clasificador actual."""
+    f = (formato or "").strip().upper()
+    alias_map = {
+        "REEL": "REEL_INSTAGRAM",
+        "INSTAGRAM": "REEL_INSTAGRAM",
+        "SHORT": "YOUTUBE_SHORT",
+        "YOUTUBE": "YOUTUBE_SHORT",
+        "COMERCIAL": "AD_SPOT",
+    }
+    return alias_map.get(f, f or "CORTO")
 
 
 def _override_formato_from_idea(formato: str, idea: str) -> str:
@@ -323,25 +397,29 @@ def _override_formato_from_idea(formato: str, idea: str) -> str:
     """
     idea_low = (idea or "").lower()
     if not idea_low:
-        return formato
+        return _normalize_formato(formato)
     # orden importa: match más específico primero
     hints = [
-        ("reel", "REEL"),
-        ("instagram", "REEL"),
+        ("reel", "REEL_INSTAGRAM"),
+        ("instagram", "REEL_INSTAGRAM"),
         ("tiktok", "TIKTOK"),
-        ("short", "SHORT"),
-        ("youtube short", "SHORT"),
+        ("youtube short", "YOUTUBE_SHORT"),
+        ("short", "YOUTUBE_SHORT"),
+        ("story", "STORY"),
         ("videoclip", "VIDEOCLIP"),
-        ("comercial", "COMERCIAL"),
-        ("spot", "COMERCIAL"),
+        ("comercial", "AD_SPOT"),
+        ("spot", "AD_SPOT"),
+        ("tutorial", "TUTORIAL"),
+        ("explicador", "EXPLAINER"),
+        ("explainer", "EXPLAINER"),
     ]
     for needle, fmt in hints:
         if needle in idea_low:
             # Si la clasificación es "genérica grande" (CORTO/MEDIO/LARGO) y la
             # idea apunta a formato corto, pisamos.
-            if formato in ("CORTO", "MEDIO", "LARGO", ""):
+            if _normalize_formato(formato) in ("CORTO", "MEDIO", "LARGO", ""):
                 return fmt
-    return formato
+    return _normalize_formato(formato)
 
 
 def _extract_title_hook(concepto_text: str, idea: str) -> tuple[str, str, list[str], str]:
@@ -706,7 +784,7 @@ def _normalize_master_stack(veo_raw: dict, fallback_desc: str) -> dict:
         "estilo_visual": (visual.get("style") or "").replace("_", " "),
         "iluminacion": visual.get("lighting", ""),
         "locacion": visual.get("environment", ""),
-        "ritmo": motion.get("motion_intensity", "med"),
+        "ritmo": motion.get("motion_intensity", "medium"),
         "audio": audio_text,
         "entidades": [],
         "planos": [plano],
@@ -1111,13 +1189,17 @@ def _build_scene_plan(scenes_timed: list[dict], estructura: str, playbook: str) 
             ms_motion = veo.get("_motion_intent") or {}
             ms_sonic = veo.get("_sonic") or {}
             ms_post = veo.get("_post") or {}
+            chosen_model = (
+                veo.get("_chosen_video_model")
+                or VIDEO_MODEL_ROUTING.get(ms_motion.get("subject_type", ""), "kling-2.5-pro")
+            )
 
             scene["master_stack"] = {
                 # Fase 2: routing determinístico a modelo I2V
-                "chosen_video_model": veo.get("_chosen_video_model"),
+                "chosen_video_model": chosen_model,
                 "subject_type": ms_motion.get("subject_type"),
                 "narrative_beat": veo.get("_narrative_beat"),
-                "source_scene_id": veo.get("_scene_id"),
+                "source_scene_id": veo.get("_scene_id") or scene["id"],
                 # Fase 1: ancla visual para FLUX.1 Pro
                 "visual_anchor": {
                     "composition": ms_visual.get("composition"),
@@ -1178,7 +1260,7 @@ def _build_scene_plan(scenes_timed: list[dict], estructura: str, playbook: str) 
                         "type": "video",
                         "description": ms_motion.get("action") or flux_prompt[:480],
                         "source": "generate",
-                        "generator_hint": veo.get("_chosen_video_model") or "kling-2.5-pro",
+                        "generator_hint": chosen_model,
                     },
                 ]
 
@@ -1395,7 +1477,7 @@ def export_project_to_openmontage(
     # 1. Clasificación + idea effective
     clasif = _parse_classification_file(project_dir / "clasificacion" / "result.txt")
     idea_eff = idea or brief_hint.get("idea") or ""
-    formato = (brief_hint.get("formato") or clasif["formato"] or "CORTO").upper()
+    formato = _normalize_formato(brief_hint.get("formato") or clasif["formato"] or "CORTO")
     formato = _override_formato_from_idea(formato, idea_eff)
     estructura = clasif.get("estructura") or "THREE_ACT"
 
@@ -1409,13 +1491,16 @@ def export_project_to_openmontage(
     # 3. Duración
     if brief_hint.get("duration_seconds"):
         total_duration = float(brief_hint["duration_seconds"])
+    elif clasif["duracion_seg"] and clasif["duracion_seg"] > 0:
+        total_duration = float(clasif["duracion_seg"])
     elif clasif["duracion_min"] and clasif["duracion_min"] > 0:
         total_duration = float(clasif["duracion_min"]) * 60.0
     else:
         total_duration = float(FORMATO_A_DURACION_SEG.get(formato, 60.0))
-    # Sanidad: si el formato es corto pero la duración explotó (>120s), corrige
-    if formato in ("REEL", "INSTAGRAM", "TIKTOK", "SHORT", "YOUTUBE_SHORT") and total_duration > 120:
-        total_duration = FORMATO_A_DURACION_SEG[formato]
+    # Sanidad: acotar outliers para formatos con límite superior conocido.
+    max_for_format = FORMATO_MAX_DURACION_SEG.get(formato)
+    if max_for_format and total_duration > max_for_format:
+        total_duration = max_for_format
 
     # 4. Escenas + timestamps
     scenes = _enumerate_scenes(project_dir)

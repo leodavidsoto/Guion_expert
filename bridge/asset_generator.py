@@ -139,6 +139,7 @@ from webapp.integrations.fal import (
     FalJobResult,
     FalJobTimeout,
 )
+from webapp.schemas.cinematic import choose_video_model
 from webapp.integrations.suno import SunoClient, SunoClip, SunoClipFailed, SunoTimeout
 
 log = structlog.get_logger(__name__)
@@ -509,14 +510,15 @@ async def process_scene(
     # ---- 2. I2V (routing desde master_stack.chosen_video_model) ----
     chosen_model = ms.get("chosen_video_model") or ""
     subject_type = ms.get("subject_type")
+    effective_i2v_model = chosen_model or choose_video_model(subject_type)
     duration = _duration_s_for_scene(scene)
     i2v_prompt = _synthesize_i2v_prompt(scene)
 
     try:
-        await budget.charge(f"{scene_id}:i2v", _cost(chosen_model))
+        await budget.charge(f"{scene_id}:i2v", _cost(effective_i2v_model))
         scene_log.info(
             "scene_i2v_start",
-            model=chosen_model,
+            model=effective_i2v_model,
             duration_s=duration,
             subject_type=subject_type,
         )
@@ -533,7 +535,7 @@ async def process_scene(
             phase="i2v",
             generator=i2v_result.model_id,
             url=i2v_url,
-            cost_usd=_cost(chosen_model),
+            cost_usd=_cost(effective_i2v_model),
             elapsed_s=round(i2v_result.elapsed_s, 2),
             request_id=i2v_result.request_id,
         ))
@@ -692,7 +694,7 @@ def plan_cost_estimate(plan: dict, *, enable_sfx: bool, has_lora_url: bool) -> d
 
     for s in scenes:
         ms = s.get("master_stack") or {}
-        i2v_model = ms.get("chosen_video_model") or ""
+        i2v_model = ms.get("chosen_video_model") or choose_video_model(ms.get("subject_type"))
         post = ms.get("post_production") or {}
         upscale = bool(post.get("upscale_with"))
 
