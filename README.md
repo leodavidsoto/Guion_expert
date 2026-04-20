@@ -4,13 +4,19 @@
 
 ![Banner](https://img.shields.io/badge/AI-Screenwriting-blueviolet?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge&logo=python)
-![Ollama](https://img.shields.io/badge/Ollama-Local_LLMs-green?style=for-the-badge)
+![Claude](https://img.shields.io/badge/Claude-Haiku_4.5-orange?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
 **Suite completa de IA para escritura de guiones cinematográficos**
 
 Sistema automatizado que genera guiones profesionales usando 8 expertos especializados,
 53 estructuras narrativas y soporte para 70+ formatos de video.
+
+> 🚧 **Estado actual (2026-04-20)**: migración en curso a **Claude Haiku 4.5** +
+> integración Master Stack con fal.ai (FLUX/Kling/Runway/WAN) + Suno self-hosted.
+> Ver **[`HANDOFF.md`](HANDOFF.md)** para retomar sesión y
+> **[`CHANGELOG.md`](CHANGELOG.md)** para el log de commits.
+> Rama activa: `feature/llm-provider-unified`.
 
 [Características](#-características) •
 [Instalación](#-instalación-rápida) •
@@ -54,12 +60,18 @@ Sistema automatizado que genera guiones profesionales usando 8 expertos especial
 - Comercial: Spots, Branded Content, Corporativos
 - Gaming: Trailers, Reviews, Let's Plays
 
-### 🎥 **Director Flow (Google Veo)**
-- Tablas de rodaje cinematográficas detalladas
-- Prompts optimizados para generación de video con IA
-- Especificaciones técnicas completas (lentes, lighting, ángulos)
-- Workflow para Scene Builder y modo Ingredients
-- 3 modos: Text-to-Video, Frames-to-Video, Ingredients
+### 🎥 **Director Flow + Master Stack (v2, Commit 7)**
+- **Tool use estructurado** con Anthropic — schema Pydantic validado, fail-fast sin regex.
+- **Pipeline de 3 fases**:
+  - *Fase 1* — Ancla visual (FLUX.1 Pro vía fal.ai).
+  - *Fase 2* — Inyección de movimiento (routing determinístico:
+    Kling 2.5 Pro / Runway Gen-3 / WAN 2.1 según `subject_type`).
+  - *Fase 3* — Post-producción (RIFE slow-mo + Real-ESRGAN 4K).
+- **Atmósfera sonora baked-in** al dialoguista — bloque estructurado
+  (MOOD/MÚSICA/SFX/DIÉGESIS/SILENCIO) que alimenta **Suno** (música) +
+  **mmaudio** (SFX).
+- **Bridge a OpenMontage** con `scene.master_stack` completo (visual_anchor +
+  camera + motion_intent + sonic + post_production + chosen_video_model).
 
 ### 🌐 **Interfaz Web Moderna**
 - WebUI en tiempo real con WebSockets
@@ -75,27 +87,28 @@ Sistema automatizado que genera guiones profesionales usando 8 expertos especial
 ### Prerrequisitos
 - **macOS** (M1/M2/Intel) o **Linux** (Ubuntu 22.04+)
 - **Python 3.11+**
-- **Ollama** (para LLMs locales)
-- **16GB RAM mínimo** (32GB recomendado)
+- **ANTHROPIC_API_KEY** (Claude Haiku 4.5 como default; Ollama queda como fallback)
+- **FAL_API_KEY** (para FLUX, Kling, Runway, WAN, Real-ESRGAN — pendiente Commit 8+)
+- **SUNO_COOKIE** (Suno self-hosted vía `gcui-art/suno-api` — pendiente Commit 10)
+- **4GB RAM mínimo** (ya no se corre Qwen 14B localmente)
 
-### Instalación Automática
+### Instalación (stack actual, post-migración Claude)
 ```bash
 # 1. Clonar repositorio
 git clone https://github.com/leodavidsoto/guion-experts-suite-v2.git
 cd guion-experts-suite-v2
 
-# 2. Instalar Ollama (si no lo tienes)
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# 3. Descargar modelos (esto toma tiempo)
-ollama pull llama3.2:3b
-ollama pull qwen2.5:7b
-ollama pull qwen2.5:14b
-
-# 4. Instalar dependencias Python
+# 2. Instalar dependencias Python (incluye anthropic, pydantic, structlog)
 pip3 install -r requirements.txt
 
-# 5. Iniciar sistema
+# 3. Configurar .env
+cp .env.example .env
+# Editar .env y agregar ANTHROPIC_API_KEY (y FAL/SUNO cuando estén)
+
+# 4. Iniciar con Docker (recomendado)
+docker compose up -d
+
+# 5. O en dev local
 ./iniciar.sh
 ```
 
@@ -227,7 +240,12 @@ Agrega archivo en `prompts/12_mi_experto.txt` y registra en `config/models.conf`
 
 ## 📚 Documentación
 
-### Guías Completas
+### Documentos clave (empezar acá)
+- **[HANDOFF.md](HANDOFF.md)** — Retomar sesión de desarrollo.
+- **[CLAUDE.md](CLAUDE.md)** — Contexto auto-cargado por Claude Code/Cowork.
+- **[CHANGELOG.md](CHANGELOG.md)** — Log detallado de commits.
+
+### Guías Completas (legacy)
 - [📖 Guía de Estructuras Narrativas](docs/ESTRUCTURAS.md)
 - [🎬 Guía de Director Flow](docs/DIRECTOR_FLOW.md)
 - [🎨 Guía de Formatos](docs/FORMATOS.md)

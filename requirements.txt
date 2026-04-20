@@ -9,3 +9,6 @@ pydantic>=2.6.0
 pydantic-settings>=2.2.0
 structlog>=24.1.0
 PyYAML>=6.0
+# HTTP client compartido por integrations/ (fal, suno, mmaudio).
+# Sync + async, HTTP/2 ready, retries propios (ver integrations/base.py).
+httpx>=0.27.0

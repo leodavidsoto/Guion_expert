@@ -93,6 +93,83 @@ class Settings(BaseSettings):
         description="URL del servidor Ollama (solo si llm_provider=ollama).",
     )
 
+    # --- fal.ai (FLUX / Kling / Runway / WAN / Real-ESRGAN / mmaudio / TTS) ---
+    fal_api_key: SecretStr = Field(
+        default=SecretStr(""),
+        description="API key de fal.ai (formato key_id:key_secret). "
+        "Requerida cuando se usa el asset_generator.",
+    )
+    fal_base_url: str = Field(
+        default="https://queue.fal.run",
+        description="Base URL de la queue API de fal.ai.",
+    )
+    fal_poll_interval_s: float = Field(
+        default=2.0,
+        ge=0.5,
+        le=60.0,
+        description="Intervalo de polling al queue de fal.ai (s).",
+    )
+    fal_poll_max_wait_s: float = Field(
+        default=900.0,
+        ge=30.0,
+        description="Tope absoluto de espera para un job de fal (s). 15min default.",
+    )
+
+    # --- FLUX / LoRA ---
+    flux_lora_trigger: str = Field(
+        default="",
+        description="Trigger word del LoRA de identidad (ej. 3SM_BAND).",
+    )
+    flux_lora_url: str = Field(
+        default="",
+        description="URL del .safetensors entrenado. Se completa tras el primer train.",
+    )
+    flux_model: str = Field(
+        default="fal-ai/flux-lora",
+        description="Modelo FLUX default (con LoRA). Override en call site si hace falta.",
+    )
+    flux_steps: int = Field(default=28, ge=1, le=100)
+    flux_guidance: float = Field(default=3.5, ge=1.0, le=20.0)
+    flux_image_size: str = Field(
+        default="portrait_16_9",
+        description="Preset de fal. Para reels (vertical): portrait_16_9. "
+        "Otros: landscape_16_9, square_hd, portrait_4_3.",
+    )
+
+    # --- I2V defaults (routing real en VIDEO_MODEL_ROUTING; esto es fallback) ---
+    i2v_default_model: str = Field(
+        default="fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+        description="Modelo I2V por defecto si el routing no matchea.",
+    )
+    i2v_default_duration_s: int = Field(default=5, ge=1, le=30)
+
+    # --- Post-producción ---
+    real_esrgan_scale: int = Field(default=2, ge=1, le=4)
+    rife_target_fps: int = Field(default=60, ge=24, le=120)
+
+    # --- HTTP client (integrations/base.py) ---
+    http_timeout_connect: float = Field(
+        default=10.0,
+        ge=0.1,
+        description="Timeout (s) al abrir conexión HTTP a integrations (fal, suno).",
+    )
+    http_timeout_read: float = Field(
+        default=300.0,
+        ge=0.1,
+        description="Timeout (s) leyendo response. I2V puede tardar minutos.",
+    )
+    http_max_retries: int = Field(
+        default=3,
+        ge=0,
+        le=10,
+        description="Reintentos en 5xx/429 con backoff exponencial.",
+    )
+    http_backoff_base: float = Field(
+        default=1.5,
+        ge=0.1,
+        description="Base (s) del backoff: base**attempt (1.5, 2.25, 3.38, ...).",
+    )
+
     # --- Cache interno: experts cargados del YAML ---
     _experts: dict[str, ExpertConfig] = PrivateAttr(default_factory=dict)
 
