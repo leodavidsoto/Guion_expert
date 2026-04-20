@@ -85,12 +85,29 @@ def _read_prompt(name: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _llm_generate(prompt: str, system_prompt: str = "", socketio=None, expert: str = "") -> str:
-    """Llama a Claude y devuelve el texto completo, emitiendo chunks vía SocketIO."""
+def _llm_generate(
+    prompt: str,
+    system_prompt: str = "",
+    socketio=None,
+    expert: str = "",
+    role: str | None = None,
+) -> str:
+    """Llama a Claude y devuelve el texto completo, emitiendo chunks vía SocketIO.
+
+    Args:
+        prompt: user prompt.
+        system_prompt: se concatena antes del user prompt.
+        socketio: instancia SocketIO para streaming al cliente.
+        expert: tag para eventos SocketIO (puede ser per-scene, ej. "escena_007").
+        role: expert role canónico para lookup en config/llm_provider.yaml
+            (ej. "dialoguista"). Si None, usa defaults globales de .env.
+    """
     full = (system_prompt + "\n\n" + prompt).strip() if system_prompt else prompt
     collected = []
     try:
-        for chunk in llm_provider.generate(model="claude", prompt=full, stream=True):
+        for chunk in llm_provider.generate(
+            model="claude", prompt=full, stream=True, role=role
+        ):
             if chunk:
                 collected.append(chunk)
                 if socketio and expert:
@@ -148,6 +165,7 @@ def _stage_clasificacion(idea: str, out_dir: Path, socketio) -> dict:
         system_prompt=prompt_system,
         socketio=socketio,
         expert="clasificador",
+        role="clasificador",
     )
     _write(out_dir / "clasificacion" / "result.txt", result)
     parsed = _parse_classification(result)
@@ -163,7 +181,13 @@ def _stage_concepto(idea: str, formato: str, estructura: str, out_dir: Path, soc
     _emit(socketio, "info", "[2/7] CONCEPTO")
     prompt_system = _read_prompt("01_concepto.txt")
     user_block = f"FORMATO: {formato}\nESTRUCTURA: {estructura}\nIDEA: {idea}"
-    result = _llm_generate(prompt=user_block, system_prompt=prompt_system, socketio=socketio, expert="concepto")
+    result = _llm_generate(
+        prompt=user_block,
+        system_prompt=prompt_system,
+        socketio=socketio,
+        expert="concepto",
+        role="concepto",
+    )
     _write(out_dir / "concepto" / "result.txt", result)
     _emit(socketio, "success", f"Concepto: {len(result.splitlines())} líneas")
     return result
@@ -173,7 +197,13 @@ def _stage_estructura(concepto: str, estructura: str, out_dir: Path, socketio) -
     _emit(socketio, "info", f"[3/7] ESTRUCTURA: {estructura}")
     prompt_file = STRUCTURE_PROMPTS.get(estructura, "02_arquitecto.txt")
     prompt_system = _read_prompt(prompt_file)
-    result = _llm_generate(prompt=concepto, system_prompt=prompt_system, socketio=socketio, expert="arquitecto")
+    result = _llm_generate(
+        prompt=concepto,
+        system_prompt=prompt_system,
+        socketio=socketio,
+        expert="arquitecto",
+        role="arquitecto",
+    )
     _write(out_dir / "estructura" / "result.txt", result)
     _emit(socketio, "success", f"Estructura {estructura} generada")
     return result
@@ -185,7 +215,13 @@ def _stage_escaleta(estructura_text: str, formato: str, estructura_name: str, ou
     _emit(socketio, "info", f"Objetivo: {num_esc} escenas")
     prompt_system = _read_prompt("03_escaletista.txt")
     prompt_system += f"\n\nGenera EXACTAMENTE {num_esc} escenas basadas en la estructura {estructura_name}."
-    result = _llm_generate(prompt=estructura_text, system_prompt=prompt_system, socketio=socketio, expert="escaletista")
+    result = _llm_generate(
+        prompt=estructura_text,
+        system_prompt=prompt_system,
+        socketio=socketio,
+        expert="escaletista",
+        role="escaletista",
+    )
     _write(out_dir / "escaleta" / "result.txt", result)
     # Extraer lineas que empiecen con "N." o "N)"
     lineas = [
@@ -213,6 +249,7 @@ def _stage_escenas(lineas: list[str], out_dir: Path, socketio) -> list[Path]:
             system_prompt=prompt_system,
             socketio=socketio,
             expert=f"escena_{num}",
+            role="dialoguista",
         )
         if not texto:
             texto = f"[ERROR escena {num}]"
@@ -229,7 +266,13 @@ def _stage_prompts_sd(escenas_paths: list[Path], out_dir: Path, socketio) -> Non
     for p in escenas_paths:
         num = p.stem.replace("escena_", "")
         head = p.read_text(encoding="utf-8")[:400]
-        out_text = _llm_generate(prompt=head, system_prompt=prompt_system, socketio=socketio, expert=f"sd_{num}")
+        out_text = _llm_generate(
+            prompt=head,
+            system_prompt=prompt_system,
+            socketio=socketio,
+            expert=f"sd_{num}",
+            role="localizador",
+        )
         if not out_text:
             out_text = "cinematic, 4k"
         _write(out_dir / "prompts_sd" / f"prompt_{num}.txt", out_text)
@@ -242,7 +285,13 @@ def _stage_prompts_veo(escenas_paths: list[Path], out_dir: Path, socketio) -> No
     for p in escenas_paths:
         num = p.stem.replace("escena_", "")
         full = p.read_text(encoding="utf-8")
-        out_text = _llm_generate(prompt=full, system_prompt=prompt_system, socketio=socketio, expert=f"veo_{num}")
+        out_text = _llm_generate(
+            prompt=full,
+            system_prompt=prompt_system,
+            socketio=socketio,
+            expert=f"veo_{num}",
+            role="director_flow",
+        )
         # Best-effort: si el modelo devolvió JSON válido lo dejamos; si no, envolvemos.
         parsed = None
         try:

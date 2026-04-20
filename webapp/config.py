@@ -23,13 +23,40 @@ import sys
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+import yaml
+from pydantic import BaseModel, Field, PrivateAttr, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 # Buscar .env en la raíz del proyecto (un nivel arriba de webapp/)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = PROJECT_ROOT / ".env"
+EXPERTS_YAML = PROJECT_ROOT / "config" / "llm_provider.yaml"
+
+
+# ============================================================
+# Config per-expert (overrides opcionales de Claude params)
+# ============================================================
+
+
+class ExpertConfig(BaseModel):
+    """Params del LLM por expert. Todos opcionales — caen a globales."""
+
+    description: str = ""
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(default=None, ge=1, le=200_000)
+
+
+def _load_experts_yaml() -> dict[str, ExpertConfig]:
+    """Carga config/llm_provider.yaml. Si no existe o está vacío, devuelve {}."""
+    if not EXPERTS_YAML.exists():
+        return {}
+    try:
+        raw = yaml.safe_load(EXPERTS_YAML.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError as e:
+        raise ValueError(f"YAML inválido en {EXPERTS_YAML}: {e}")
+    experts_data = raw.get("experts", {}) or {}
+    return {name: ExpertConfig(**cfg) for name, cfg in experts_data.items()}
 
 
 class Settings(BaseSettings):
@@ -66,7 +93,10 @@ class Settings(BaseSettings):
         description="URL del servidor Ollama (solo si llm_provider=ollama).",
     )
 
-    # --- Validación cruzada (después de cargar todos los campos) ---
+    # --- Cache interno: experts cargados del YAML ---
+    _experts: dict[str, ExpertConfig] = PrivateAttr(default_factory=dict)
+
+    # --- Validación cruzada + carga de experts (después de cargar campos) ---
     def model_post_init(self, __context) -> None:
         if self.llm_provider == "claude":
             key = self.anthropic_api_key.get_secret_value().strip()
@@ -81,12 +111,40 @@ class Settings(BaseSettings):
                     "Reemplazala con tu key real de https://console.anthropic.com/"
                 )
 
+        # Cargar experts YAML (opcional — si falta, usamos globales)
+        self._experts = _load_experts_yaml()
+
     # --- Helpers ---
     def is_claude(self) -> bool:
         return self.llm_provider == "claude"
 
     def is_ollama(self) -> bool:
         return self.llm_provider == "ollama"
+
+    def expert_config(self, role: str | None) -> ExpertConfig | None:
+        """Devuelve la config declarada del expert, o None si no hay override."""
+        if not role:
+            return None
+        return self._experts.get(role)
+
+    def params_for(self, role: str | None) -> tuple[int, float]:
+        """Devuelve (max_tokens, temperature) efectivos para un expert role.
+
+        Hace merge: override del YAML por-expert, cae a globales si falta.
+        Si role es None o no está en el YAML, usa globales.
+        """
+        cfg = self.expert_config(role)
+        if cfg is None:
+            return (self.claude_max_tokens, self.claude_temperature)
+        max_tokens = cfg.max_tokens if cfg.max_tokens is not None else self.claude_max_tokens
+        temperature = (
+            cfg.temperature if cfg.temperature is not None else self.claude_temperature
+        )
+        return (max_tokens, temperature)
+
+    def known_experts(self) -> list[str]:
+        """Lista de experts declarados en el YAML."""
+        return sorted(self._experts.keys())
 
 
 # Singleton — fail-fast: si algo está mal, crashea ACÁ al importar.
@@ -121,3 +179,15 @@ if __name__ == "__main__":
     print(f"  CLAUDE_TEMPERATURE:  {settings.claude_temperature}")
     print(f"  OLLAMA_HOST:         {settings.ollama_host}")
     print(f"  API key:             {key_preview} ({key_len} chars)")
+
+    experts = settings.known_experts()
+    print(f"\n  Experts YAML: {EXPERTS_YAML}")
+    print(f"  Cargados: {len(experts)}")
+    for role in experts:
+        mt, tp = settings.params_for(role)
+        cfg = settings.expert_config(role)
+        desc = (cfg.description[:40] + "…") if cfg and len(cfg.description) > 40 else (cfg.description if cfg else "")
+        print(f"    - {role:<15} tokens={mt:<5} temp={tp:<4}  {desc}")
+    # Sanity: expert desconocido cae a defaults
+    mt, tp = settings.params_for("no_existe")
+    print(f"\n  Fallback (role desconocido): tokens={mt} temp={tp}")

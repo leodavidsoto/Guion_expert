@@ -44,6 +44,9 @@ services:
       # Estructuras narrativas (JSON, read-only)
       - ./estructuras:/app/estructuras:ro
 
+      # Config per-expert (llm_provider.yaml + otros .conf/.json)
+      - ./config:/app/config:ro
+
     environment:
       # En Docker siempre forzamos JSON logs (redundante con el ENV del
       # Dockerfile, pero explícito).

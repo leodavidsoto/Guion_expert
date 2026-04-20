@@ -90,7 +90,12 @@ def provider_status() -> dict:
     }
 
 
-def generate(model: str, prompt: str, stream: bool = True) -> Iterator[str]:
+def generate(
+    model: str,
+    prompt: str,
+    stream: bool = True,
+    role: Optional[str] = None,
+) -> Iterator[str]:
     """
     Generador que produce chunks de texto del LLM.
 
@@ -98,13 +103,23 @@ def generate(model: str, prompt: str, stream: bool = True) -> Iterator[str]:
         model: nombre de modelo. Si provider=claude se ignora y usa CLAUDE_MODEL.
         prompt: prompt completo a enviar.
         stream: si True, yield chunks incrementales; si False, yield una sola vez.
+        role: expert role (ej. 'dialoguista'). Si está declarado en
+            config/llm_provider.yaml, usa sus max_tokens/temperature específicos.
+            Si es None o no está en el YAML, usa los defaults globales.
 
     Yields:
         str: chunks de la respuesta.
     """
     if PROVIDER == "claude":
-        yield from _generate_claude(prompt, stream=stream)
+        max_tokens, temperature = settings.params_for(role)
+        yield from _generate_claude(
+            prompt,
+            stream=stream,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
     elif PROVIDER == "ollama":
+        # Ollama no respeta per-expert params todavía — pasa derecho.
         yield from _generate_ollama(model, prompt, stream=stream)
     else:
         raise RuntimeError(f"LLM_PROVIDER desconocido: {PROVIDER}")
@@ -112,14 +127,22 @@ def generate(model: str, prompt: str, stream: bool = True) -> Iterator[str]:
 
 # --- Claude backend ----------------------------------------------------------
 
-def _generate_claude(prompt: str, stream: bool = True) -> Iterator[str]:
+def _generate_claude(
+    prompt: str,
+    stream: bool = True,
+    max_tokens: int | None = None,
+    temperature: float | None = None,
+) -> Iterator[str]:
     client = _get_claude_client()
+
+    mt = max_tokens if max_tokens is not None else CLAUDE_MAX_TOKENS
+    tp = temperature if temperature is not None else CLAUDE_TEMPERATURE
 
     if stream:
         with client.messages.stream(
             model=CLAUDE_MODEL,
-            max_tokens=CLAUDE_MAX_TOKENS,
-            temperature=CLAUDE_TEMPERATURE,
+            max_tokens=mt,
+            temperature=tp,
             messages=[{"role": "user", "content": prompt}],
         ) as stream_resp:
             for text_chunk in stream_resp.text_stream:
@@ -127,8 +150,8 @@ def _generate_claude(prompt: str, stream: bool = True) -> Iterator[str]:
     else:
         resp = client.messages.create(
             model=CLAUDE_MODEL,
-            max_tokens=CLAUDE_MAX_TOKENS,
-            temperature=CLAUDE_TEMPERATURE,
+            max_tokens=mt,
+            temperature=tp,
             messages=[{"role": "user", "content": prompt}],
         )
         # Concatenar todos los bloques de texto
