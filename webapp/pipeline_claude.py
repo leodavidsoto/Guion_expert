@@ -33,6 +33,7 @@ from typing import Optional
 
 import llm_provider  # webapp/llm_provider.py
 from observability import get_logger, bind_pipeline_context
+from schemas import VeoPrompt, choose_video_model
 
 log = get_logger(__name__)
 
@@ -280,31 +281,87 @@ def _stage_prompts_sd(escenas_paths: list[Path], out_dir: Path, socketio) -> Non
 
 
 def _stage_prompts_veo(escenas_paths: list[Path], out_dir: Path, socketio) -> None:
-    _emit(socketio, "info", "[7/7] GENERANDO PROMPTS VEO")
+    """Etapa 7 — genera el Master Stack cinematográfico por escena via tool use.
+
+    Reemplaza el viejo parseo regex+json.loads por Anthropic tool use con el
+    schema VeoPrompt. Sin fallback silencioso: si Claude falla, el pipeline
+    se frena con un error explícito (fail-fast).
+    """
+    _emit(socketio, "info", "[7/7] GENERANDO PROMPTS VEO (Master Stack)")
     prompt_system = _read_prompt("05_veo_flow.txt")
+    veo_schema = VeoPrompt.model_json_schema()
+
     for p in escenas_paths:
         num = p.stem.replace("escena_", "")
-        full = p.read_text(encoding="utf-8")
-        out_text = _llm_generate(
-            prompt=full,
-            system_prompt=prompt_system,
-            socketio=socketio,
-            expert=f"veo_{num}",
-            role="director_flow",
+        scene_number = int(num)
+        scene_id = f"scene-{num}"
+        scene_text = p.read_text(encoding="utf-8")
+
+        # Inyectamos scene_id + number explícitos para que Claude no los alucine.
+        user_prompt = (
+            f"scene_id: {scene_id}\n"
+            f"scene_number: {scene_number}\n\n"
+            f"ESCENA (texto completo del dialoguista, incluye bloque de atmósfera sonora al final):\n"
+            f"-----------------------------------------------------------\n"
+            f"{scene_text}\n"
+            f"-----------------------------------------------------------\n\n"
+            f"Emití el Master Stack completo via la herramienta emit_veo_prompt."
         )
-        # Best-effort: si el modelo devolvió JSON válido lo dejamos; si no, envolvemos.
-        parsed = None
+
+        _emit(socketio, "info", f"  VEO {scene_id}…")
         try:
-            # busca el primer bloque JSON
-            m = re.search(r"\{[\s\S]*\}", out_text)
-            if m:
-                parsed = json.loads(m.group(0))
-        except Exception:
-            parsed = None
-        if parsed is None:
-            parsed = {"plano": "default", "raw": out_text}
-        _write(out_dir / "prompts_veo" / f"veo_{num}.json", json.dumps(parsed, indent=2, ensure_ascii=False))
-    _emit(socketio, "success", f"Prompts Veo: {len(escenas_paths)}")
+            payload = llm_provider.generate_structured(
+                prompt=user_prompt,
+                system_prompt=prompt_system,
+                tool_name="emit_veo_prompt",
+                tool_description=(
+                    "Emite el Master Stack cinematográfico completo para esta escena: "
+                    "cámara (CameraPhysics), ancla visual para FLUX (VisualAnchor), "
+                    "intención de movimiento para routing I2V (MotionIntent), "
+                    "atmósfera sonora para Suno/mmaudio (SonicAtmosphere) "
+                    "y post-producción (PostProduction)."
+                ),
+                input_schema=veo_schema,
+                role="director_flow",
+            )
+            veo = VeoPrompt.model_validate(payload)
+        except Exception as e:
+            log.error(
+                "veo_generation_failed",
+                scene_id=scene_id,
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            _emit(socketio, "error", f"❌ VEO {scene_id} falló: {e}")
+            raise  # fail-fast: no continuar con escenas rotas
+
+        # Persistir el VeoPrompt validado (pretty JSON para lectura humana)
+        out_path = out_dir / "prompts_veo" / f"veo_{num}.json"
+        _write(out_path, veo.model_dump_json(indent=2))
+
+        # Routing info — logueamos el modelo I2V decidido por OpenMontage
+        chosen = choose_video_model(veo.motion_intent.subject_type)
+        log.info(
+            "veo_scene_generated",
+            scene_id=scene_id,
+            narrative_beat=veo.narrative_beat,
+            subject_type=veo.motion_intent.subject_type,
+            chosen_video_model=chosen,
+            mood=veo.sonic.mood,
+            duration_s=veo.camera.duration_seconds,
+        )
+
+        # Emit al cliente con el chunk relevante para la UI
+        if socketio:
+            socketio.emit(
+                "expert_update",
+                {
+                    "expert": f"veo_{num}",
+                    "content": f"{veo.camera.shot_type} · {veo.camera.movement} · {chosen}",
+                },
+            )
+
+    _emit(socketio, "success", f"Prompts VEO (Master Stack): {len(escenas_paths)}")
 
 
 # --- Entry point ------------------------------------------------------------

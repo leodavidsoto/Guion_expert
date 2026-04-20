@@ -125,6 +125,82 @@ def generate(
         raise RuntimeError(f"LLM_PROVIDER desconocido: {PROVIDER}")
 
 
+# --- Structured output (Anthropic tool use) ----------------------------------
+
+
+def generate_structured(
+    prompt: str,
+    tool_name: str,
+    tool_description: str,
+    input_schema: dict,
+    role: Optional[str] = None,
+    system_prompt: str = "",
+) -> dict:
+    """Obtiene JSON tipado via Anthropic tool use — sin regex, sin fallback silencioso.
+
+    Fuerza a Claude a invocar la herramienta declarada. Devuelve el dict exacto
+    del `tool_use.input`, que Pydantic puede validar directo con model_validate().
+
+    Args:
+        prompt: mensaje del user (descripción de la tarea, datos de entrada).
+        tool_name: nombre de la herramienta (ej. 'emit_veo_prompt').
+        tool_description: descripción legible para Claude — clave para buen output.
+        input_schema: JSON schema — pasá `MyModel.model_json_schema()` de Pydantic.
+        role: expert role para lookup de max_tokens/temperature en settings.
+        system_prompt: opcional, se manda como `system` (no concatenado al user).
+
+    Returns:
+        dict con los inputs que Claude le pasó al tool. Listo para `Model.model_validate(payload)`.
+
+    Raises:
+        RuntimeError: si el provider no es claude, o si Claude no usa la tool.
+    """
+    if PROVIDER != "claude":
+        raise RuntimeError(
+            "generate_structured() solo funciona con LLM_PROVIDER=claude. "
+            f"Actual: {PROVIDER}."
+        )
+
+    client = _get_claude_client()
+    max_tokens, temperature = settings.params_for(role)
+
+    kwargs: dict = {
+        "model": CLAUDE_MODEL,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "tools": [
+            {
+                "name": tool_name,
+                "description": tool_description,
+                "input_schema": input_schema,
+            }
+        ],
+        # Forzamos el uso del tool — Claude no puede contestar en texto libre
+        "tool_choice": {"type": "tool", "name": tool_name},
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if system_prompt:
+        kwargs["system"] = system_prompt
+
+    response = client.messages.create(**kwargs)
+
+    # El response puede tener múltiples content blocks (thinking, text, tool_use).
+    # Nos interesa solo el tool_use matching con tool_name.
+    for block in response.content:
+        if getattr(block, "type", None) == "tool_use" and block.name == tool_name:
+            # block.input es el dict con las claves del schema — ya parseado por Anthropic.
+            return block.input
+
+    # Si llegamos acá, Claude ignoró el tool_choice (muy raro, pero posible si max_tokens
+    # es demasiado bajo y el response se trunca antes del tool_use).
+    stop_reason = getattr(response, "stop_reason", "unknown")
+    raise RuntimeError(
+        f"Claude no invocó la herramienta '{tool_name}'. "
+        f"stop_reason={stop_reason}. "
+        f"Subí max_tokens del expert '{role or 'default'}' en config/llm_provider.yaml."
+    )
+
+
 # --- Claude backend ----------------------------------------------------------
 
 def _generate_claude(

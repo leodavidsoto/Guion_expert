@@ -142,6 +142,21 @@ SHOT_SIZE_SYNONYMS: dict[str, str] = {
 }
 
 CAMERA_MOVEMENT_SYNONYMS: dict[str, str] = {
+    # Master Stack v2 (underscore — match directo con el schema Pydantic)
+    "dolly_in": "dolly_in",
+    "dolly_out": "dolly_out",
+    "tracking_left": "tracking_left",
+    "tracking_right": "tracking_right",
+    "pan_left": "pan_left",
+    "pan_right": "pan_right",
+    "tilt_up": "tilt_up",
+    "tilt_down": "tilt_down",
+    "zoom_in": "zoom_in",
+    "zoom_out": "zoom_out",
+    "whip_pan": "whip_pan",
+    "crane_up": "crane_up",
+    "crane_down": "crane_down",
+    "rack_focus": "rack_focus",
     # Español
     "dolly in": "dolly_in",
     "dolly out": "dolly_out",
@@ -443,6 +458,22 @@ def _enumerate_scenes(project_dir: Path) -> list[dict]:
 
 # ───────────────────────── Normalización de VEO ────────────────────────────
 
+# Routing determinístico: subject_type → modelo I2V.
+# Espejo de webapp/schemas/cinematic.py::VIDEO_MODEL_ROUTING.
+# Se duplica a propósito para mantener el bridge desacoplado de webapp/.
+VIDEO_MODEL_ROUTING: dict[str, str] = {
+    "human_gesture": "kling-2.5-pro",
+    "human_performance": "kling-2.5-pro",
+    "creature_animal": "kling-2.5-pro",
+    "landscape_static": "runway-gen3-alpha-turbo",
+    "landscape_dynamic": "runway-gen3-alpha-turbo",
+    "drone_sweep": "runway-gen3-alpha-turbo",
+    "subtle_slow_camera": "wan-2.1-14b",
+    "object_reveal": "wan-2.1-14b",
+    "vfx_heavy": "kling-2.5-pro",
+}
+
+
 def _normalize_veo(veo_raw: Any, fallback_desc: str = "") -> dict:
     """
     Normaliza cualquier forma del JSON de prompt Veo a un dict canónico:
@@ -460,9 +491,16 @@ def _normalize_veo(veo_raw: Any, fallback_desc: str = "") -> dict:
               "entidades_en_plano", "accion_continua", "dialogo_sfx",
               "prompt_veo": str
           }],
+          # Si el veo_raw es Master Stack (v2), además:
+          "_master_stack": True,
+          "_camera": dict, "_visual_anchor": dict, "_motion_intent": dict,
+          "_sonic": dict, "_post": dict,
+          "_chosen_video_model": str, "_scene_id": str, "_narrative_beat": str,
         }
-    Soporta tanto la forma plana {plano, movimiento, iluminacion} como la
-    nested completa del prompt 05_veo_flow.txt.
+    Soporta tres formatos:
+      1. Master Stack v2 (webapp/schemas/cinematic.py::VeoPrompt) — PREFERIDO
+      2. Nested legacy ({parametros_globales, tracking_entidades, secuencia_planos})
+      3. Plano legacy ({plano, movimiento, iluminacion})
     """
     empty = {
         "descripcion": "",
@@ -477,6 +515,10 @@ def _normalize_veo(veo_raw: Any, fallback_desc: str = "") -> dict:
     if not isinstance(veo_raw, dict):
         empty["descripcion"] = fallback_desc
         return empty
+
+    # v2 — Master Stack: detecta por presencia de los 3 bloques canónicos
+    if "visual_anchor" in veo_raw and "motion_intent" in veo_raw and "camera" in veo_raw:
+        return _normalize_master_stack(veo_raw, fallback_desc)
 
     pg = veo_raw.get("parametros_globales") or {}
     te = veo_raw.get("tracking_entidades") or {}
@@ -560,6 +602,126 @@ def _safe_float(v: Any) -> Optional[float]:
         return f if f > 0 else None
     except (TypeError, ValueError):
         return None
+
+
+# ───────────────────────── Master Stack v2 ─────────────────────────────────
+
+def _synthesize_flux_prompt(visual: dict, motion: dict) -> str:
+    """
+    Construye el prompt denso para FLUX.1 Pro (Fase 1 — Ancla Visual).
+
+    El modelo I2V hereda la calidad del frame 0. Este prompt sintetiza
+    los bloques `visual_anchor` y `motion_intent` en una única línea
+    cinematográfica densa — no minimalista, para que el generador tenga
+    anclas concretas de composición, paleta, lente y textura.
+    """
+    parts: list[str] = []
+
+    subject = (visual.get("subject_description") or "").strip()
+    if subject:
+        parts.append(subject)
+
+    env = (visual.get("environment") or "").strip()
+    if env:
+        parts.append(env)
+
+    comp = (visual.get("composition") or "").strip()
+    if comp:
+        parts.append(comp)
+
+    palette = visual.get("palette") or []
+    if isinstance(palette, list) and palette:
+        parts.append("palette: " + ", ".join(str(c) for c in palette if c))
+
+    lighting = (visual.get("lighting") or "").strip()
+    if lighting:
+        parts.append("lighting: " + lighting)
+
+    textures = (visual.get("textures") or "").strip()
+    if textures:
+        parts.append("textures: " + textures)
+
+    style = (visual.get("style") or "").strip()
+    if style:
+        parts.append("style: " + style.replace("_", " "))
+
+    action = (motion.get("action") or "").strip()
+    if action:
+        # Frame 0: la acción al inicio del plano, no su desarrollo
+        parts.append("subject action at frame 0: " + action)
+
+    return ". ".join(p for p in parts if p).strip()
+
+
+def _normalize_master_stack(veo_raw: dict, fallback_desc: str) -> dict:
+    """
+    Mapea el schema Master Stack (v2) al dict canónico del bridge.
+
+    Mantiene los campos clásicos (descripcion, estilo_visual, iluminacion,
+    locacion, ritmo, audio, entidades, planos) para que el resto del
+    pipeline OpenMontage siga funcionando sin tocar, y agrega passthrough
+    con prefijo `_` que `_build_scene_plan` consume para enriquecer el
+    scene_plan.json con metadata del Master Stack (chosen_video_model,
+    visual_anchor para FLUX, motion_intent para routing I2V, sonic para
+    Suno/mmaudio, post_production para Fase 3).
+    """
+    camera = veo_raw.get("camera") or {}
+    visual = veo_raw.get("visual_anchor") or {}
+    motion = veo_raw.get("motion_intent") or {}
+    sonic = veo_raw.get("sonic") or {}
+    post = veo_raw.get("post") or {}
+
+    subject_type = motion.get("subject_type", "")
+    chosen_model = VIDEO_MODEL_ROUTING.get(subject_type, "kling-2.5-pro")
+
+    # Un único plano por escena — la filosofía Master Stack es:
+    # "los I2V rinden mejor en 4-8s; divide escenas, no las estires".
+    plano = {
+        "plano_id": "1A",
+        "descripcion_corta": _first_nonempty(
+            motion.get("action"), visual.get("subject_description"), fallback_desc
+        ),
+        "duracion_s": _safe_float(camera.get("duration_seconds")),
+        "tipo_plano": camera.get("shot_type", ""),
+        "angulo_lente": f"{camera.get('lens_mm')}mm" if camera.get("lens_mm") else "",
+        "movimiento_camara": camera.get("movement", "static"),
+        "entidades_en_plano": [],
+        "accion_continua": motion.get("action", ""),
+        "dialogo_sfx": "; ".join(s for s in (sonic.get("sfx") or []) if s),
+        "prompt_veo": _synthesize_flux_prompt(visual, motion),
+    }
+
+    # audio legible: diégesis + primer sfx si existe
+    audio_bits = []
+    if sonic.get("diegetic_sound"):
+        audio_bits.append(sonic["diegetic_sound"])
+    if sonic.get("music_brief"):
+        audio_bits.append("music: " + sonic["music_brief"])
+    audio_text = ". ".join(audio_bits)
+
+    return {
+        "descripcion": _first_nonempty(motion.get("action"), fallback_desc),
+        "estilo_visual": (visual.get("style") or "").replace("_", " "),
+        "iluminacion": visual.get("lighting", ""),
+        "locacion": visual.get("environment", ""),
+        "ritmo": motion.get("motion_intensity", "med"),
+        "audio": audio_text,
+        "entidades": [],
+        "planos": [plano],
+        # Passthrough del Master Stack — consumido por _build_scene_plan
+        "_master_stack": True,
+        "_camera": camera,
+        "_visual_anchor": visual,
+        "_motion_intent": motion,
+        "_sonic": sonic,
+        "_post": post,
+        "_chosen_video_model": chosen_model,
+        "_scene_id": veo_raw.get("scene_id", ""),
+        "_scene_number": veo_raw.get("scene_number"),
+        "_narrative_beat": veo_raw.get("narrative_beat", ""),
+        "_text_on_screen": veo_raw.get("text_on_screen", ""),
+        "_director_notes": veo_raw.get("director_notes", ""),
+    }
 
 
 # ───────────────────────── Extracción cinematográfica ──────────────────────
@@ -878,6 +1040,7 @@ def _asset_description_video(s: dict) -> str:
 def _build_scene_plan(scenes_timed: list[dict], estructura: str, playbook: str) -> dict:
     n = len(scenes_timed)
     hero_idx = _hero_moment_index(n)
+    master_stack_count = 0
 
     scenes_out = []
     for i, s in enumerate(scenes_timed, start=1):
@@ -935,6 +1098,88 @@ def _build_scene_plan(scenes_timed: list[dict], estructura: str, playbook: str) 
         ]
         scene["required_assets"] = required
 
+        # ─── Master Stack v2 passthrough ───────────────────────────────
+        # Si el VEO fue emitido por el Director de Flow (tool use estructurado),
+        # enriquecemos la escena con toda la metadata cinematográfica que
+        # OpenMontage / fal.ai / Suno / RIFE consumen para producir el video.
+        if veo.get("_master_stack"):
+            master_stack_count += 1
+            ms_camera = veo.get("_camera") or {}
+            ms_visual = veo.get("_visual_anchor") or {}
+            ms_motion = veo.get("_motion_intent") or {}
+            ms_sonic = veo.get("_sonic") or {}
+            ms_post = veo.get("_post") or {}
+
+            scene["master_stack"] = {
+                # Fase 2: routing determinístico a modelo I2V
+                "chosen_video_model": veo.get("_chosen_video_model"),
+                "subject_type": ms_motion.get("subject_type"),
+                "narrative_beat": veo.get("_narrative_beat"),
+                "source_scene_id": veo.get("_scene_id"),
+                # Fase 1: ancla visual para FLUX.1 Pro
+                "visual_anchor": {
+                    "composition": ms_visual.get("composition"),
+                    "palette": ms_visual.get("palette") or [],
+                    "lighting": ms_visual.get("lighting"),
+                    "textures": ms_visual.get("textures"),
+                    "style": ms_visual.get("style"),
+                    "subject_description": ms_visual.get("subject_description"),
+                    "environment": ms_visual.get("environment"),
+                    "flux_prompt": first_plano.get("prompt_veo", ""),
+                },
+                # Fase 2: parámetros de cámara e inyección de movimiento
+                "camera": {
+                    "shot_type": ms_camera.get("shot_type"),
+                    "movement": ms_camera.get("movement"),
+                    "lens_mm": ms_camera.get("lens_mm"),
+                    "duration_seconds": ms_camera.get("duration_seconds"),
+                },
+                "motion_intent": {
+                    "action": ms_motion.get("action"),
+                    "motion_intensity": ms_motion.get("motion_intensity"),
+                    "physics_notes": ms_motion.get("physics_notes"),
+                },
+                # Atmósfera sonora para Suno + mmaudio (SFX)
+                "sonic": {
+                    "mood": ms_sonic.get("mood") or [],
+                    "music_brief": ms_sonic.get("music_brief"),
+                    "music_reference_artists": ms_sonic.get("music_reference_artists") or [],
+                    "sfx": ms_sonic.get("sfx") or [],
+                    "diegetic_sound": ms_sonic.get("diegetic_sound"),
+                    "silence_moments": ms_sonic.get("silence_moments"),
+                },
+                # Fase 3: post-producción (RIFE, Real-ESRGAN, Topaz)
+                "post_production": {
+                    "target_fps": ms_post.get("target_fps"),
+                    "target_resolution": ms_post.get("target_resolution"),
+                    "upscale_with": ms_post.get("upscale_with"),
+                    "fps_interpolation": ms_post.get("fps_interpolation"),
+                },
+                # Extras narrativos
+                "text_on_screen": veo.get("_text_on_screen") or "",
+                "director_notes": veo.get("_director_notes") or "",
+            }
+
+            # Re-enriquecemos los required_assets cuando hay Master Stack:
+            # el prompt de imagen es el flux_prompt denso, y el video apunta
+            # al modelo I2V elegido por routing.
+            flux_prompt = first_plano.get("prompt_veo", "")
+            if flux_prompt:
+                scene["required_assets"] = [
+                    {
+                        "type": "image",
+                        "description": flux_prompt[:480],
+                        "source": "generate",
+                        "generator_hint": "flux-1.1-pro",
+                    },
+                    {
+                        "type": "video",
+                        "description": ms_motion.get("action") or flux_prompt[:480],
+                        "source": "generate",
+                        "generator_hint": veo.get("_chosen_video_model") or "kling-2.5-pro",
+                    },
+                ]
+
         scenes_out.append(scene)
 
     return {
@@ -945,6 +1190,8 @@ def _build_scene_plan(scenes_timed: list[dict], estructura: str, playbook: str) 
             "source": "Guion_expert",
             "estructura_narrativa": estructura,
             "hero_scene_id": f"scene-{hero_idx:03d}" if n else None,
+            "master_stack_scenes": master_stack_count,
+            "master_stack_coverage": (master_stack_count / n) if n else 0.0,
             "generated_at": _now_iso(),
         },
     }
