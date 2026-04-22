@@ -12,9 +12,9 @@ source config/models.conf
 Uso: ./scripts/pipeline_shorts.sh "idea" [plataforma]
 
 Plataformas:
-  youtube    - YouTube Shorts (60s)
-  instagram  - Instagram Reels (15-90s)
-  tiktok     - TikTok (15-180s)
+  youtube    - YouTube Shorts (hasta 180s)
+  instagram  - Instagram Reels (hasta 180s)
+  tiktok     - TikTok (hasta 10m grabado in-app)
   multi      - Versión para todas (auto-adapta)
 
 Ejemplo:
@@ -52,9 +52,10 @@ log_success "Tipo: $TIPO ($DURACION segundos)"
 
 # Seleccionar prompt según tipo
 case $TIPO in
-    YOUTUBE_SHORT) PROMPT_FILE="prompts/07_youtube_short.txt" ;;
-    REEL_INSTAGRAM) PROMPT_FILE="prompts/08_reel_instagram.txt" ;;
+    YOUTUBE_SHORT|SHORT) PROMPT_FILE="prompts/07_youtube_short.txt" ;;
+    REEL_INSTAGRAM|REEL) PROMPT_FILE="prompts/08_reel_instagram.txt" ;;
     TIKTOK) PROMPT_FILE="prompts/09_tiktok.txt" ;;
+    AD_SPOT|COMERCIAL) PROMPT_FILE="prompts/08_reel_instagram.txt" ;;
     *) PROMPT_FILE="prompts/07_youtube_short.txt" ;;
 esac
 

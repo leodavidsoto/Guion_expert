@@ -46,11 +46,11 @@ experts:
     max_tokens: 4096
 
   localizador:
-    description: "Genera prompts de Stable Diffusion. Técnico, denso, corto."
+    description: "Genera prompts visuales técnicos (imagen fija) con foco en consistencia cinematográfica."
     temperature: 0.4
     max_tokens: 512
 
   director_flow:
-    description: "Genera prompts JSON estructurados para VEO/Flow. Output rígido."
+    description: "Genera payloads estructurados para VEO/Flow con control estricto de cámara, movimiento y sonido."
     temperature: 0.3
-    max_tokens: 1024
+    max_tokens: 2048

@@ -54,6 +54,14 @@ DEFAULT_SCENE_COUNTS = {
     "SHORT": 6,
     "TIKTOK": 5,
     "COMERCIAL": 4,
+    # Aliases de formatos sociales detectados por el clasificador
+    "YOUTUBE_SHORT": 6,
+    "REEL_INSTAGRAM": 6,
+    "STORY": 4,
+    "AD_SPOT": 4,
+    # Formatos informativos / tutoriales
+    "TUTORIAL": 10,
+    "EXPLAINER": 8,
 }
 
 # Estructura narrativa -> prompt file (duplica selector_prompt_estructura.sh)

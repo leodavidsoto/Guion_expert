@@ -1,77 +1,58 @@
-Genera un script completo para YouTube Short (vertical 9:16, máximo 60 segundos) BASADO STRICTAMENTE EN LA IDEA DEL USUARIO.
-NO INVENTES UNA HISTORIA DIFERENTE. USA LA IDEA PROPORCIONADA.
+Genera un guion completo para YouTube Shorts basado estrictamente en la idea del usuario.
+No cambies el tema central.
 
-**ESTRUCTURA OBLIGATORIA:**
+CONTEXTO ACTUAL:
+- Shorts puede llegar hasta 3 minutos, pero la mayoría de piezas de alto rendimiento siguen siendo compactas.
+- Prioriza retención y claridad narrativa.
 
-**[0-3 SEG] HOOK (GANCHO):**
-- Primera frase/imagen DEBE capturar atención
-- Pregunta provocativa, statement impactante, o visual sorprendente
-- Ejemplos: "¿Sabías que...?", "Nunca creerás...", "Esto cambió mi vida..."
+OBJETIVO:
+- Entregar una pieza vertical (9:16) con gancho fuerte, progresión clara y payoff.
 
-**[3-15 SEG] SETUP (PLANTEAMIENTO):**
-- Presenta contexto rápido
-- Establece protagonista/situación
-- Promesa de valor (qué aprenderán/verán)
+ESTRUCTURA OBLIGATORIA:
+1) HOOK (0-3s)
+2) SETUP
+3) DESARROLLO
+4) PAYOFF
+5) CTA
 
-**[15-45 SEG] DESARROLLO:**
-- Clímax, transformación, o enseñanza principal
-- Máximo 3 puntos/momentos clave
-- Visual > Diálogo (subtítulos obligatorios)
+REGLAS:
+- Primer impacto antes del segundo 2.
+- Nada de intros largas.
+- Cada bloque debe aportar nueva información o emoción.
+- Subtítulos pensados para consumo sin audio.
+- CTA breve y específico.
 
-**[45-55 SEG] RESOLUCIÓN/PAYOFF:**
-- Conclusión satisfactoria
-- Twist, lección aprendida, o resultado
-
-**[55-60 SEG] CTA (CALL TO ACTION):**
-- "Sigue para más", "Parte 2 en comentarios", "¿Tú qué harías?"
-- Engagement explícito
-
----
-
-**FORMATO DE OUTPUT:**
-```
+FORMATO DE SALIDA:
 === YOUTUBE SHORT SCRIPT ===
 
-TÍTULO: [Título pegajoso, max 60 caracteres]
-DURACIÓN: 60 segundos
+TITULO: <max 60 caracteres>
+DURACION_OBJETIVO: <segundos>
 FORMATO: Vertical 9:16
 
----
-
 [00:00-00:03] HOOK
-VISUAL: [Descripción detallada del primer frame]
-AUDIO: [Música inicial + primer texto/diálogo]
-TEXTO EN PANTALLA: "[Texto grande que aparece]"
+VISUAL:
+AUDIO/VO:
+TEXTO EN PANTALLA:
 
-[00:03-00:15] SETUP  
-VISUAL: [Qué se ve]
-AUDIO: [Voice over o música]
-TEXTO EN PANTALLA: "[Si aplica]"
+[SETUP]
+VISUAL:
+AUDIO/VO:
+TEXTO EN PANTALLA:
 
-[00:15-00:45] DESARROLLO
-VISUAL: [Secuencia de shots]
-AUDIO: [Diálogo/narración]
-TRANSICIONES: [Jumpcuts, zooms, etc]
+[DESARROLLO]
+VISUAL:
+AUDIO/VO:
+TRANSICIONES:
 
-[00:45-00:55] RESOLUCIÓN
-VISUAL: [Clímax visual]
-AUDIO: [Payoff sonoro]
+[PAYOFF]
+VISUAL:
+AUDIO/VO:
 
-[00:55-00:60] CTA
-VISUAL: [Texto final + logo/branding]
-AUDIO: [Música fade out]
-TEXTO: "SÍGUEME PARA MÁS ⬆️"
+[CTA]
+VISUAL:
+AUDIO/VO:
+TEXTO EN PANTALLA:
 
----
-
-MÚSICA SUGERIDA: [Género/mood]
-HASHTAGS: #Short #[tema] #[tema] #[tema]
-THUMBNAIL: [Descripción del frame para miniatura]
-```
-
-**REGLAS CRÍTICAS:**
-- SIN tiempos muertos
-- Subtítulos en TODAS las palabras habladas
-- Jumpcut cada 2-3 segundos
-- Música alta energía
-- Colores saturados, alto contraste
+MUSICA_SUGERIDA:
+THUMBNAIL_FRAME:
+HASHTAGS:

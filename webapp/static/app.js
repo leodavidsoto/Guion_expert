@@ -1,5 +1,9 @@
 // Configuración
-const socket = io();
+const hasSocketIO = typeof window.io === 'function';
+const socket = hasSocketIO ? window.io() : {
+    on: () => {},
+    emit: () => {}
+};
 let currentView = 'generate';
 let currentStructure = null;
 let currentExpert = null;
@@ -22,7 +26,9 @@ function initNavigation() {
     document.querySelectorAll('.nav-icon').forEach(icon => {
         icon.addEventListener('click', () => {
             const view = icon.dataset.view;
-            switchView(view);
+            if (view) {
+                switchView(view);
+            }
         });
     });
 }
@@ -64,53 +70,88 @@ function initAutoDetect() {
     const autoDetect = document.getElementById('autoDetect');
     const manualControls = document.getElementById('manualControls');
 
-    autoDetect.addEventListener('change', () => {
-        if (autoDetect.checked) {
-            manualControls.classList.add('hidden');
-        } else {
-            manualControls.classList.remove('hidden');
-        }
-    });
+    if (!autoDetect || !manualControls) return;
+
+    const syncManualControls = () => {
+        manualControls.classList.toggle('hidden', autoDetect.checked);
+    };
+
+    autoDetect.addEventListener('change', syncManualControls);
+    syncManualControls();
+    autoDetect.dataset.bound = '1';
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // GENERAR PROYECTO COMPLETO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function initGenerateButton() {
-    document.getElementById('generateBtn').addEventListener('click', generateProject);
+    const generateBtn = document.getElementById('generateBtn');
+    if (!generateBtn) return;
+    if (generateBtn.dataset.bound === '1') return;
+    generateBtn.addEventListener('click', generateProject);
+    generateBtn.dataset.bound = '1';
 }
 
 async function generateProject() {
-    const idea = document.getElementById('ideaInput').value.trim();
+    const ideaInput = document.getElementById('ideaInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const logConsole = document.getElementById('logConsole');
+    const autoDetectInput = document.getElementById('autoDetect');
+    const formatoSelect = document.getElementById('formatoSelect');
+    const estructuraSelect = document.getElementById('estructuraSelect');
+
+    if (!ideaInput || !generateBtn || !logConsole || !autoDetectInput || !formatoSelect || !estructuraSelect) {
+        alert('Falta configuración de interfaz. Recarga la página.');
+        return;
+    }
+
+    const idea = ideaInput.value.trim();
 
     if (!idea) {
         alert('Por favor ingresa una idea');
         return;
     }
 
-    const autoDetect = document.getElementById('autoDetect').checked;
-    const formato = document.getElementById('formatoSelect').value;
-    const estructura = document.getElementById('estructuraSelect').value;
+    const autoDetect = autoDetectInput.checked;
+    const formato = formatoSelect.value;
+    const estructura = estructuraSelect.value;
 
     // Limpiar consola
-    document.getElementById('logConsole').innerHTML = '';
+    logConsole.innerHTML = '';
 
-    // Enviar petición
-    const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            idea: idea,
-            auto_detect: autoDetect,
-            formato: formato || null,
-            estructura: estructura || null
-        })
-    });
+    generateBtn.disabled = true;
+    generateBtn.textContent = '⏳ Iniciando...';
+    addLog('info', '⏳ Enviando solicitud de generación...');
 
-    const data = await response.json();
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                idea: idea,
+                auto_detect: autoDetect,
+                formato: formato || null,
+                estructura: estructura || null
+            })
+        });
 
-    if (data.status === 'started') {
-        addLog('info', '🚀 Generación iniciada...');
+        const data = await response.json();
+
+        if (!response.ok) {
+            addLog('error', `❌ Error ${response.status}: ${data.error || 'No se pudo iniciar la generación'}`);
+            return;
+        }
+
+        if (data.status === 'started') {
+            addLog('success', '🚀 Generación iniciada...');
+        } else {
+            addLog('error', `❌ Respuesta inesperada: ${JSON.stringify(data)}`);
+        }
+    } catch (error) {
+        addLog('error', `❌ Fallo de conexión al generar: ${error.message}`);
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '🚀 Generar Proyecto';
     }
 }
 
@@ -418,6 +459,16 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // WEBSOCKETS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function initSocketListeners() {
+    if (!hasSocketIO) {
+        console.warn('Socket.IO no cargado. UI en modo sin tiempo real.');
+        const statusBadge = document.getElementById('statusBadge');
+        if (statusBadge) {
+            statusBadge.textContent = '● Sin Socket';
+            statusBadge.style.background = 'var(--error)';
+        }
+        return;
+    }
+
     socket.on('connect', () => {
         console.log('Conectado al servidor');
         document.getElementById('statusBadge').textContent = '● Conectado';
@@ -554,6 +605,10 @@ function addWorkspaceLog(type, message) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function getCategoryIcon(category) {
     const icons = {
+        'classic_hollywood': '🎬',
+        'mythic_journey': '🗿',
+        'episodic_tv': '📺',
+        'non_linear': '🔀',
         'hollywood': '🎬',
         'mythic': '🗿',
         'tv': '📺',
@@ -569,6 +624,10 @@ function getCategoryIcon(category) {
 
 function getCategoryName(category) {
     const names = {
+        'classic_hollywood': 'Hollywood Clásico',
+        'mythic_journey': 'Viaje Mítico',
+        'episodic_tv': 'TV y Series',
+        'non_linear': 'No Lineal',
         'hollywood': 'Hollywood Clásico',
         'mythic': 'Viaje Mítico',
         'tv': 'TV y Series',

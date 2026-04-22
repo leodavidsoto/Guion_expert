@@ -96,9 +96,8 @@ def get_experts():
         'arquitecto': {'name': 'Arquitecto', 'icon': '🏗️', 'description': 'Estructura narrativa'},
         'escaletista': {'name': 'Escaletista', 'icon': '📋', 'description': 'Genera escaleta'},
         'dialoguista': {'name': 'Dialoguista', 'icon': '💬', 'description': 'Escribe diálogos'},
-        'prompts_sd': {'name': 'Prompts SD', 'icon': '🎨', 'description': 'Prompts Stable Diffusion'},
-        'prompts_veo': {'name': 'Prompts Veo', 'icon': '🎬', 'description': 'Prompts video AI'},
-        'localizador': {'name': 'Localizador', 'icon': '🇨🇱', 'description': 'Adapta a español chileno'}
+        'localizador': {'name': 'Localizador Visual', 'icon': '🎨', 'description': 'Genera prompts visuales para imagen fija'},
+        'director_flow': {'name': 'Director Flow', 'icon': '🎬', 'description': 'Traduce escena a plan técnico de video IA'}
     }
     return jsonify(experts)
 
@@ -405,19 +404,59 @@ def run_expert_thread(expert, input_text):
         
         # Use config or defaults
         expert_map = {
-            'clasificador': (APP_CONFIG.get('MODEL_CLASIFICADOR', 'llama3.2:3b'), 'prompts/00_clasificador_completo.txt'),
-            'concepto': (APP_CONFIG.get('MODEL_CONCEPTO', 'qwen2.5:7b'), 'prompts/01_concepto.txt'),
-            'arquitecto': (APP_CONFIG.get('MODEL_ARQUITECTO', 'qwen2.5:14b'), 'prompts/02_arquitecto.txt'),
-            'escaletista': (APP_CONFIG.get('MODEL_ESCALETISTA', 'qwen2.5:7b'), 'prompts/03_escaletista.txt'),
-            'dialoguista': (APP_CONFIG.get('MODEL_DIALOGUISTA', 'qwen2.5:14b'), 'prompts/04_dialoguista.txt'),
-            'localizador': (APP_CONFIG.get('MODEL_LOCALIZADOR', 'qwen2.5:7b'), 'prompts/10_localizador_chile.txt')
+            'clasificador': (
+                APP_CONFIG.get('MODEL_CLASIFICADOR', 'llama3.2:3b'),
+                'prompts/00_clasificador_completo.txt',
+                'clasificador',
+            ),
+            'concepto': (
+                APP_CONFIG.get('MODEL_CONCEPTO', 'qwen2.5:7b'),
+                'prompts/01_concepto.txt',
+                'concepto',
+            ),
+            'arquitecto': (
+                APP_CONFIG.get('MODEL_ARQUITECTO', 'qwen2.5:14b'),
+                'prompts/02_arquitecto.txt',
+                'arquitecto',
+            ),
+            'escaletista': (
+                APP_CONFIG.get('MODEL_ESCALETISTA', 'qwen2.5:7b'),
+                'prompts/03_escaletista.txt',
+                'escaletista',
+            ),
+            'dialoguista': (
+                APP_CONFIG.get('MODEL_DIALOGUISTA', 'qwen2.5:14b'),
+                'prompts/04_dialoguista.txt',
+                'dialoguista',
+            ),
+            'localizador': (
+                APP_CONFIG.get('MODEL_PROMPTS_SD', APP_CONFIG.get('MODEL_LOCALIZADOR', 'qwen2.5:7b')),
+                'prompts/06_sd.txt',
+                'localizador',
+            ),
+            'director_flow': (
+                APP_CONFIG.get('MODEL_DIRECTOR_FLOW', APP_CONFIG.get('MODEL_PROMPTS_VEO', 'qwen2.5:14b')),
+                'prompts/11_director_flow.txt',
+                'director_flow',
+            ),
+            # Backward compatibility con UI/API antiguas
+            'prompts_sd': (
+                APP_CONFIG.get('MODEL_PROMPTS_SD', APP_CONFIG.get('MODEL_LOCALIZADOR', 'qwen2.5:7b')),
+                'prompts/06_sd.txt',
+                'localizador',
+            ),
+            'prompts_veo': (
+                APP_CONFIG.get('MODEL_PROMPTS_VEO', APP_CONFIG.get('MODEL_DIRECTOR_FLOW', 'qwen2.5:14b')),
+                'prompts/11_director_flow.txt',
+                'director_flow',
+            ),
         }
         
         if expert not in expert_map:
             socketio.emit('log', {'type': 'error', 'message': f'Experto desconocido: {expert}'})
             return
         
-        model, prompt_file = expert_map[expert]
+        model, prompt_file, role = expert_map[expert]
         prompt_path = BASE_DIR / prompt_file
         
         if not prompt_path.exists():
@@ -429,7 +468,7 @@ def run_expert_thread(expert, input_text):
 
         # LLM call vía adaptador (Claude Haiku 4.5 o Ollama según .env)
         result = ""
-        for chunk in llm_provider.generate(model=model, prompt=full_input, stream=True):
+        for chunk in llm_provider.generate(model=model, prompt=full_input, stream=True, role=role):
             if chunk:
                 result += chunk
                 socketio.emit('expert_update', {'expert': expert, 'content': result})
@@ -482,7 +521,7 @@ def run_structure_thread(structure_id, input_text):
 
         # LLM call vía adaptador
         result = ""
-        for chunk in llm_provider.generate(model=model, prompt=full_input, stream=True):
+        for chunk in llm_provider.generate(model=model, prompt=full_input, stream=True, role='arquitecto'):
             if chunk:
                 result += chunk
 
@@ -528,7 +567,7 @@ def run_flow_thread(scene_content, output_format='text'):
 
         # LLM call vía adaptador
         result = ""
-        for chunk in llm_provider.generate(model=model, prompt=full_input, stream=True):
+        for chunk in llm_provider.generate(model=model, prompt=full_input, stream=True, role='director_flow'):
             if chunk:
                 result += chunk
                 if output_format == 'text':

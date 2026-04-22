@@ -56,6 +56,7 @@ import asyncio
 import time
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlsplit
 
 import structlog
 
@@ -183,6 +184,9 @@ class FalClient(BaseHTTPClient):
         self._api_key = key
         self.poll_interval_s = poll_interval_s or settings.fal_poll_interval_s
         self.poll_max_wait_s = poll_max_wait_s or settings.fal_poll_max_wait_s
+        # request_id -> (status_path, result_path). Algunos modelos (Kling)
+        # responden con rutas de queue distintas al model_id submitteado.
+        self._request_paths: dict[str, tuple[str, str]] = {}
 
         super().__init__(
             base_url=base_url or settings.fal_base_url,
@@ -224,6 +228,7 @@ class FalClient(BaseHTTPClient):
             raise HTTPClientError(
                 f"fal {model_id}: submit no devolvió request_id. Body: {resp}"
             )
+        self._register_request_paths(model_id, request_id, resp)
         return request_id
 
     async def asubmit(self, model: str, payload: dict) -> str:
@@ -235,6 +240,7 @@ class FalClient(BaseHTTPClient):
             raise HTTPClientError(
                 f"fal {model_id}: submit no devolvió request_id. Body: {resp}"
             )
+        self._register_request_paths(model_id, request_id, resp)
         return request_id
 
     def _status_path(self, model_id: str, request_id: str) -> str:
@@ -242,6 +248,28 @@ class FalClient(BaseHTTPClient):
 
     def _result_path(self, model_id: str, request_id: str) -> str:
         return f"/{model_id}/requests/{request_id}"
+
+    def _path_from_url(self, value: str | None, *, fallback: str) -> str:
+        """Normaliza una URL absoluta de queue a path relativo."""
+        if not value:
+            return fallback
+        try:
+            parsed = urlsplit(value)
+            path = parsed.path or ""
+            if not path.startswith("/"):
+                return fallback
+            if parsed.query:
+                path = f"{path}?{parsed.query}"
+            return path
+        except Exception:  # noqa: BLE001
+            return fallback
+
+    def _register_request_paths(self, model_id: str, request_id: str, resp: dict) -> None:
+        status_default = self._status_path(model_id, request_id)
+        result_default = self._result_path(model_id, request_id)
+        status_path = self._path_from_url(resp.get("status_url"), fallback=status_default)
+        result_path = self._path_from_url(resp.get("response_url"), fallback=result_default)
+        self._request_paths[request_id] = (status_path, result_path)
 
     def poll_until_complete(
         self,
@@ -257,11 +285,34 @@ class FalClient(BaseHTTPClient):
         cap = max_wait_s or self.poll_max_wait_s
 
         t0 = time.monotonic()
-        logs_path = f"{self._status_path(model_id, request_id)}?logs=1"
+        status_path, result_path = self._request_paths.get(
+            request_id,
+            (self._status_path(model_id, request_id), self._result_path(model_id, request_id)),
+        )
+        use_logs = True
         last_status = None
 
         while True:
-            status_resp = self.get(logs_path)
+            poll_path = (
+                f"{status_path}{'&' if '?' in status_path else '?'}logs=1"
+                if use_logs
+                else status_path
+            )
+            try:
+                status_resp = self.get(poll_path)
+            except HTTPClientError as e:
+                # Algunos modelos de fal (ej. ciertas rutas I2V) no soportan
+                # `?logs=1` y responden 405/404. Reintentamos sin logs.
+                if use_logs and e.status_code in {404, 405}:
+                    use_logs = False
+                    log.warning(
+                        "fal_status_logs_unsupported",
+                        model=model_id,
+                        request_id=request_id,
+                        status_code=e.status_code,
+                    )
+                    continue
+                raise
             status = status_resp.get("status", "UNKNOWN")
             if status != last_status:
                 log.info(
@@ -289,8 +340,9 @@ class FalClient(BaseHTTPClient):
             time.sleep(interval)
 
         # Fetch result
-        payload = self.get(self._result_path(model_id, request_id))
+        payload = self.get(result_path)
         elapsed = time.monotonic() - t0
+        self._request_paths.pop(request_id, None)
         return FalJobResult(
             request_id=request_id,
             model_id=model_id,
@@ -313,11 +365,34 @@ class FalClient(BaseHTTPClient):
         cap = max_wait_s or self.poll_max_wait_s
 
         t0 = time.monotonic()
-        logs_path = f"{self._status_path(model_id, request_id)}?logs=1"
+        status_path, result_path = self._request_paths.get(
+            request_id,
+            (self._status_path(model_id, request_id), self._result_path(model_id, request_id)),
+        )
+        use_logs = True
         last_status = None
 
         while True:
-            status_resp = await self.aget(logs_path)
+            poll_path = (
+                f"{status_path}{'&' if '?' in status_path else '?'}logs=1"
+                if use_logs
+                else status_path
+            )
+            try:
+                status_resp = await self.aget(poll_path)
+            except HTTPClientError as e:
+                # Algunos modelos de fal (ej. ciertas rutas I2V) no soportan
+                # `?logs=1` y responden 405/404. Reintentamos sin logs.
+                if use_logs and e.status_code in {404, 405}:
+                    use_logs = False
+                    log.warning(
+                        "fal_status_logs_unsupported",
+                        model=model_id,
+                        request_id=request_id,
+                        status_code=e.status_code,
+                    )
+                    continue
+                raise
             status = status_resp.get("status", "UNKNOWN")
             if status != last_status:
                 log.info(
@@ -344,8 +419,9 @@ class FalClient(BaseHTTPClient):
                 )
             await asyncio.sleep(interval)
 
-        payload = await self.aget(self._result_path(model_id, request_id))
+        payload = await self.aget(result_path)
         elapsed = time.monotonic() - t0
+        self._request_paths.pop(request_id, None)
         return FalJobResult(
             request_id=request_id,
             model_id=model_id,

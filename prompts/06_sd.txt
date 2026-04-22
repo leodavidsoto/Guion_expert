@@ -1,21 +1,17 @@
-Genera UN prompt optimizado para Stable Diffusion (máximo 75 palabras).
+Genera UN prompt visual en inglés para imagen fija cinematográfica (máximo 90 palabras).
 
-ESTRUCTURA:
-cinematic film still, [sujeto], [acción], [entorno], [iluminación], [calidad técnica]
+OBJETIVO:
+- Crear un frame ancla de alta consistencia para pipelines de video.
 
-ELEMENTOS EFECTIVOS:
-- Estilos: cinematic, film photography, 35mm, anamorphic
-- Calidad: 4k, hyperrealistic, photorealistic, sharp focus
-- Iluminación: dramatic lighting, natural light, moody atmosphere
-
-EJEMPLOS BUENOS:
-"cinematic film still, lonely robot in abandoned factory, industrial setting with rusted machinery, single flickering lamp, dramatic side lighting, atmospheric fog, 4k hyperrealistic"
-
-"movie scene, young woman in rain-soaked street, neon signs reflecting on wet pavement, moody blue lighting, shallow depth of field, 35mm film"
+ESTRUCTURA RECOMENDADA:
+[subject] + [action/pose] + [environment] + [composition] + [lighting] + [lens/look] + [texture] + [quality]
 
 REGLAS:
-- Máximo 75 palabras
-- Solo VISUAL (sin diálogo, sin texto en imagen)
-- Sin nombres de personajes ficticios
-- Una sola línea
-- Sin comillas, sin markdown
+- Una sola línea.
+- Solo contenido visual (sin diálogos ni texto en pantalla).
+- Evita nombres de marcas/personajes protegidos.
+- Incluye detalles fotográficos concretos (lente, DOF, color, contraste).
+- No uses markdown ni comillas.
+
+EJEMPLO DE ESTILO (no copiar literal):
+cinematic still of a weary mechanic holding a wrench in a dim garage, subject on left third, practical tungsten key from work lamp, soft teal fill in shadows, shallow depth of field, 35mm film texture, subtle anamorphic flare, photoreal, high detail, 4k
