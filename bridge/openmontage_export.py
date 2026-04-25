@@ -537,19 +537,104 @@ def _enumerate_scenes(project_dir: Path) -> list[dict]:
 # ───────────────────────── Normalización de VEO ────────────────────────────
 
 # Routing determinístico: subject_type → modelo I2V.
-# Espejo de webapp/schemas/cinematic.py::VIDEO_MODEL_ROUTING.
+# Espejo de webapp/schemas/cinematic.py::VIDEO_MODEL_ROUTING_V2.
 # Se duplica a propósito para mantener el bridge desacoplado de webapp/.
-VIDEO_MODEL_ROUTING: dict[str, str] = {
-    "human_gesture": "kling-2.5-pro",
-    "human_performance": "kling-2.5-pro",
-    "creature_animal": "kling-2.5-pro",
-    "landscape_static": "runway-gen3-alpha-turbo",
-    "landscape_dynamic": "runway-gen3-alpha-turbo",
-    "drone_sweep": "runway-gen3-alpha-turbo",
-    "subtle_slow_camera": "wan-2.1-14b",
-    "object_reveal": "wan-2.1-14b",
-    "vfx_heavy": "kling-2.5-pro",
+# v2: dict-of-dicts con api_model, trinity_model, modality, fal_modality, reason.
+VIDEO_MODEL_ROUTING_V2: dict[str, dict] = {
+    "human_gesture":      {"api_model": "kling-2.5-pro",           "trinity_model": "skyreels-v1",  "modality": "t2v", "fal_modality": "i2v"},
+    "human_performance":  {"api_model": "kling-2.5-pro",           "trinity_model": "skyreels-v1",  "modality": "t2v", "fal_modality": "i2v"},
+    "creature_animal":    {"api_model": "kling-2.5-pro",           "trinity_model": "skyreels-v1",  "modality": "t2v", "fal_modality": "i2v"},
+    "landscape_static":   {"api_model": "runway-gen3-alpha-turbo", "trinity_model": "wan-2.1-14b",  "modality": "i2v", "fal_modality": "i2v"},
+    "landscape_dynamic":  {"api_model": "runway-gen3-alpha-turbo", "trinity_model": "wan-2.1-14b",  "modality": "i2v", "fal_modality": "i2v"},
+    "drone_sweep":        {"api_model": "runway-gen3-alpha-turbo", "trinity_model": "wan-2.1-14b",  "modality": "i2v", "fal_modality": "i2v"},
+    "subtle_slow_camera": {"api_model": "wan-2.1-14b",             "trinity_model": "wan-2.1-14b",  "modality": "i2v", "fal_modality": "i2v"},
+    "object_reveal":      {"api_model": "wan-2.1-14b",             "trinity_model": "wan-2.1-14b",  "modality": "i2v", "fal_modality": "i2v"},
+    "vfx_heavy":          {"api_model": "kling-2.5-pro",           "trinity_model": "hunyuan-13b",  "modality": "t2v", "fal_modality": "i2v"},
 }
+
+# Retrocompat v1 — dict plano (subject_type → api_model). Usado por
+# código legacy del bridge y por el test suite.
+VIDEO_MODEL_ROUTING: dict[str, str] = {
+    k: v["api_model"] for k, v in VIDEO_MODEL_ROUTING_V2.items()
+}
+
+
+def _trinity_enabled() -> bool:
+    """Lee TRINITY_ENABLED del entorno. Default False (modo API-only)."""
+    import os
+    return os.getenv("TRINITY_ENABLED", "false").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _resolve_backend(veo_raw: dict) -> dict:
+    """
+    Resuelve el backend y modalidad efectivos para una escena VeoPrompt.
+
+    Lee:
+        - veo_raw["preferred_backend"]: "auto" | "fal" | "trinity" (del director_flow)
+        - veo_raw["modality_override"]: None | "i2v" | "t2v" (opcional)
+        - TRINITY_ENABLED env var
+        - subject_type del motion_intent
+
+    Returns:
+        {
+            "backend": "fal" | "trinity",         # efectivo
+            "model":   "<model_name>",            # modelo concreto
+            "modality": "i2v" | "t2v",            # modalidad efectiva
+            "needs_flux_anchor": bool,            # True si modality==i2v
+            "reason": str,                        # auditable
+            "subject_type": str,
+        }
+    """
+    motion = veo_raw.get("motion_intent") or veo_raw.get("_motion_intent") or {}
+    subject_type = motion.get("subject_type", "")
+    preferred = (veo_raw.get("preferred_backend") or "auto").lower()
+    modality_override = veo_raw.get("modality_override")  # None | "i2v" | "t2v"
+
+    spec = VIDEO_MODEL_ROUTING_V2.get(subject_type) or {
+        "api_model": "kling-2.5-pro",
+        "trinity_model": "skyreels-v1",
+        "modality": "t2v",
+        "fal_modality": "i2v",
+    }
+
+    # Decisión de backend
+    if preferred == "fal":
+        backend = "fal"
+    elif preferred == "trinity":
+        backend = "trinity" if _trinity_enabled() else "fal"
+    else:  # auto
+        backend = "trinity" if _trinity_enabled() else "fal"
+
+    # Modelo efectivo
+    model = spec["trinity_model"] if backend == "trinity" else spec["api_model"]
+
+    # Modalidad efectiva (override > default por backend)
+    if modality_override in ("i2v", "t2v"):
+        modality = modality_override
+    elif backend == "trinity":
+        modality = spec["modality"]
+    else:
+        modality = spec.get("fal_modality", "i2v")
+
+    reason_bits = [
+        f"subject_type={subject_type or 'unknown'}",
+        f"backend={backend}",
+        f"model={model}",
+        f"modality={modality}",
+    ]
+    if preferred != "auto":
+        reason_bits.append(f"preferred={preferred}")
+    if modality_override:
+        reason_bits.append(f"modality_override={modality_override}")
+
+    return {
+        "backend": backend,
+        "model": model,
+        "modality": modality,
+        "needs_flux_anchor": modality == "i2v",
+        "reason": " · ".join(reason_bits),
+        "subject_type": subject_type,
+    }
 
 
 def _normalize_veo(veo_raw: Any, fallback_desc: str = "") -> dict:
@@ -733,6 +818,90 @@ def _synthesize_flux_prompt(visual: dict, motion: dict) -> str:
     return ". ".join(p for p in parts if p).strip()
 
 
+def _synthesize_t2v_prompt(visual: dict, motion: dict, camera: dict) -> str:
+    """
+    Construye el prompt para Text-to-Video puro (SkyReels, Hunyuan).
+
+    A diferencia del I2V (que depende de una imagen ancla FLUX), el T2V
+    necesita que TODA la información visual + movimiento esté en el
+    prompt. Entonces este prompt es más denso narrativamente y pone
+    la acción y la física como protagonistas — el modelo aprende la
+    composición del texto, no de una imagen.
+
+    Filosofía:
+      - Frase 1: quién + qué hace (acción como hilo conductor).
+      - Frase 2: entorno + atmósfera.
+      - Frase 3: cámara (shot, lens, movimiento).
+      - Frase 4: estilo visual (grano, paleta, iluminación).
+      - Frase 5: física específica (physics_notes).
+    """
+    parts: list[str] = []
+
+    # 1. Acción primero — en T2V el movimiento es el protagonista
+    subject = (visual.get("subject_description") or "").strip()
+    action = (motion.get("action") or "").strip()
+    if subject and action:
+        parts.append(f"{subject} — {action}")
+    elif subject:
+        parts.append(subject)
+    elif action:
+        parts.append(action)
+
+    # 2. Entorno
+    env = (visual.get("environment") or "").strip()
+    if env:
+        parts.append(env)
+
+    # 3. Cámara verbalizada (en T2V el modelo usa el texto, no metadata)
+    shot_type = (camera.get("shot_type") or "").replace("_", " ").strip()
+    movement = (camera.get("movement") or "").replace("_", " ").strip()
+    lens_mm = camera.get("lens_mm")
+    camera_desc = []
+    if shot_type:
+        camera_desc.append(f"{shot_type} shot")
+    if movement and movement != "static":
+        camera_desc.append(f"camera {movement}")
+    elif movement == "static":
+        camera_desc.append("static camera")
+    if lens_mm:
+        camera_desc.append(f"{lens_mm}mm lens")
+    if camera_desc:
+        parts.append(", ".join(camera_desc))
+
+    # 4. Iluminación
+    lighting = (visual.get("lighting") or "").strip()
+    if lighting:
+        parts.append("lighting: " + lighting)
+
+    # 5. Paleta
+    palette = visual.get("palette") or []
+    if isinstance(palette, list) and palette:
+        parts.append("palette: " + ", ".join(str(c) for c in palette if c))
+
+    # 6. Estilo + texturas (para que el modelo tenga grano/fórmula fílmica)
+    style = (visual.get("style") or "").strip()
+    if style:
+        parts.append("style: " + style.replace("_", " "))
+
+    textures = visual.get("textures") or []
+    if isinstance(textures, list) and textures:
+        parts.append("texture: " + ", ".join(str(t) for t in textures if t))
+    elif isinstance(textures, str) and textures.strip():
+        parts.append("texture: " + textures.strip())
+
+    # 7. Física — clave en T2V porque Hunyuan la aprendió end-to-end
+    physics = (motion.get("physics_notes") or "").strip()
+    if physics:
+        parts.append("physics: " + physics)
+
+    # 8. Intensidad de movimiento como hint
+    intensity = (motion.get("motion_intensity") or "").strip()
+    if intensity and intensity != "medium":
+        parts.append(f"motion intensity: {intensity}")
+
+    return ". ".join(p for p in parts if p).strip()
+
+
 def _normalize_master_stack(veo_raw: dict, fallback_desc: str) -> dict:
     """
     Mapea el schema Master Stack (v2) al dict canónico del bridge.
@@ -751,8 +920,21 @@ def _normalize_master_stack(veo_raw: dict, fallback_desc: str) -> dict:
     sonic = veo_raw.get("sonic") or {}
     post = veo_raw.get("post") or {}
 
-    subject_type = motion.get("subject_type", "")
-    chosen_model = VIDEO_MODEL_ROUTING.get(subject_type, "kling-2.5-pro")
+    # v2 — resolver híbrido (fal vs trinity, i2v vs t2v)
+    resolution = _resolve_backend(veo_raw)
+    subject_type = resolution["subject_type"]
+    chosen_model = resolution["model"]
+    backend = resolution["backend"]
+    modality = resolution["modality"]
+    needs_flux = resolution["needs_flux_anchor"]
+
+    # Prompt para el modelo de video:
+    #   - I2V: flux_prompt denso (ancla visual + inicio de acción).
+    #   - T2V: prompt directo (subject + action + style + lighting) — sin FLUX.
+    if needs_flux:
+        video_prompt = _synthesize_flux_prompt(visual, motion)
+    else:
+        video_prompt = _synthesize_t2v_prompt(visual, motion, camera)
 
     # Un único plano por escena — la filosofía Master Stack es:
     # "los I2V rinden mejor en 4-8s; divide escenas, no las estires".
@@ -768,7 +950,7 @@ def _normalize_master_stack(veo_raw: dict, fallback_desc: str) -> dict:
         "entidades_en_plano": [],
         "accion_continua": motion.get("action", ""),
         "dialogo_sfx": "; ".join(s for s in (sonic.get("sfx") or []) if s),
-        "prompt_veo": _synthesize_flux_prompt(visual, motion),
+        "prompt_veo": video_prompt,
     }
 
     # audio legible: diégesis + primer sfx si existe
@@ -801,6 +983,13 @@ def _normalize_master_stack(veo_raw: dict, fallback_desc: str) -> dict:
         "_narrative_beat": veo_raw.get("narrative_beat", ""),
         "_text_on_screen": veo_raw.get("text_on_screen", ""),
         "_director_notes": veo_raw.get("director_notes", ""),
+        # v2 — Trinity hybrid routing
+        "_backend": backend,
+        "_modality": modality,
+        "_needs_flux_anchor": needs_flux,
+        "_preferred_backend": veo_raw.get("preferred_backend", "auto"),
+        "_modality_override": veo_raw.get("modality_override"),
+        "_routing_reason": _first_nonempty(veo_raw.get("routing_reason"), resolution["reason"]),
     }
 
 
@@ -1195,8 +1384,14 @@ def _build_scene_plan(scenes_timed: list[dict], estructura: str, playbook: str) 
             )
 
             scene["master_stack"] = {
-                # Fase 2: routing determinístico a modelo I2V
+                # Fase 2: routing determinístico a modelo + backend + modalidad (v2)
                 "chosen_video_model": chosen_model,
+                "backend": veo.get("_backend", "fal"),
+                "modality": veo.get("_modality", "i2v"),
+                "needs_flux_anchor": veo.get("_needs_flux_anchor", True),
+                "preferred_backend": veo.get("_preferred_backend", "auto"),
+                "modality_override": veo.get("_modality_override"),
+                "routing_reason": veo.get("_routing_reason", ""),
                 "subject_type": ms_motion.get("subject_type"),
                 "narrative_beat": veo.get("_narrative_beat"),
                 "source_scene_id": veo.get("_scene_id") or scene["id"],
@@ -1244,25 +1439,32 @@ def _build_scene_plan(scenes_timed: list[dict], estructura: str, playbook: str) 
                 "director_notes": veo.get("_director_notes") or "",
             }
 
-            # Re-enriquecemos los required_assets cuando hay Master Stack:
-            # el prompt de imagen es el flux_prompt denso, y el video apunta
-            # al modelo I2V elegido por routing.
-            flux_prompt = first_plano.get("prompt_veo", "")
-            if flux_prompt:
-                scene["required_assets"] = [
-                    {
+            # Re-enriquecemos los required_assets cuando hay Master Stack.
+            # En I2V se requiere la imagen ancla (flux); en T2V se salta.
+            video_prompt_text = first_plano.get("prompt_veo", "")
+            needs_flux = veo.get("_needs_flux_anchor", True)
+            modality = veo.get("_modality", "i2v")
+            backend = veo.get("_backend", "fal")
+
+            if video_prompt_text:
+                assets: list[dict] = []
+                if needs_flux:
+                    assets.append({
                         "type": "image",
-                        "description": flux_prompt[:480],
+                        "description": video_prompt_text[:480],
                         "source": "generate",
                         "generator_hint": "flux-1.1-pro",
-                    },
-                    {
-                        "type": "video",
-                        "description": ms_motion.get("action") or flux_prompt[:480],
-                        "source": "generate",
-                        "generator_hint": chosen_model,
-                    },
-                ]
+                        "role": "flux_anchor",
+                    })
+                assets.append({
+                    "type": "video",
+                    "description": ms_motion.get("action") or video_prompt_text[:480],
+                    "source": "generate",
+                    "generator_hint": chosen_model,
+                    "backend": backend,
+                    "modality": modality,
+                })
+                scene["required_assets"] = assets
 
         scenes_out.append(scene)
 

@@ -17,9 +17,23 @@ CRITERIOS CREATIVOS Y TECNICOS:
 - `palette`: 2-6 tokens útiles, no adjetivos vacíos.
 - `lighting`: motivada por fuente diegética cuando aplique.
 - `subject_description` y `environment`: consistencia visual estricta.
+- Recordá: aunque la escena se resuelva en T2V (ver más abajo), la
+  ancla visual sigue siendo obligatoria porque FLUX la usa como
+  referencia si el resolver cae a backend I2V (fal.ai Kling/Runway/WAN).
 
-3) MOVIMIENTO (`motion_intent`)
-- `subject_type` define routing de modelo; elegilo con precisión.
+3) MOVIMIENTO Y RUTEO (`motion_intent`)
+- `subject_type` es el DRIVER del routing automático de modelo y modalidad:
+  • human_gesture / human_performance / creature_animal
+      → fal: Kling 2.5 Pro (I2V con ancla FLUX)
+      → trinity: SkyReels V1 (T2V puro, mejor para matices emocionales)
+  • landscape_static / landscape_dynamic / drone_sweep
+      → fal: Runway Gen-3 Alpha Turbo (I2V)
+      → trinity: Wan 2.1 14B (I2V, MoE cinemática)
+  • subtle_slow_camera / object_reveal
+      → fal o trinity: Wan 2.1 14B (I2V, respeta frame 0)
+  • vfx_heavy
+      → fal: Kling (I2V con ancla FLUX)
+      → trinity: Hunyuan 13B (T2V, física end-to-end para fuego/agua/colisiones)
 - `action`: 1-2 frases precisas, físicamente plausibles.
 - `physics_notes`: viento, telas, partículas, inercia, etc.
 
@@ -33,6 +47,25 @@ CRITERIOS CREATIVOS Y TECNICOS:
 - Escena estándar -> 1080p suele bastar.
 - `fps_interpolation` solo cuando aporta valor narrativo.
 
+6) TRINITY HYBRID — backend y modalidad (nuevo)
+- `preferred_backend`: default "auto". Solo override cuando:
+    • "fal"     → escena de alta criticidad con deadline duro (producción).
+    • "trinity" → escena experimental o de estilo particular que se
+                  beneficia de Wan/SkyReels/Hunyuan (exploración creativa).
+    • "auto"    → default. El resolver decide según TRINITY_ENABLED y
+                  disponibilidad del endpoint Colab; recomendado.
+- `modality_override`: casi siempre null. Solo rellenalo si tenés una
+  razón creativa fuerte para forzar I2V o T2V por encima del default:
+    • "i2v" → si querés asegurar composición cinemática exacta aunque
+              el modelo nativo sea T2V (ej. Hunyuan forzado a ancla FLUX).
+    • "t2v" → si querés aprovechar la dinámica end-to-end y aceptar
+              menor control visual fino.
+- `routing_reason`: OBLIGATORIO. Una frase explicando la decisión
+  (subject_type + modalidad + backend). Ejemplos:
+    • "human_performance íntimo, T2V Trinity (SkyReels) por matiz emocional"
+    • "landscape drone amplio, I2V fal (Runway) por deadline productivo"
+    • "vfx_heavy fuego, T2V Trinity (Hunyuan) por física end-to-end"
+
 CONSTRAINTS DE PLATAFORMA (alineados a documentación reciente):
 - Prompts de video en inglés rinden mejor.
 - Flujos tipo Veo suelen operar en 24fps.
@@ -43,3 +76,4 @@ REGLAS DURAS:
 - Usá `scene_id` y `scene_number` exactamente como vienen.
 - No inventes hechos ausentes en la escena.
 - Evitá lenguaje genérico como "cinematic lighting" sin detalle técnico.
+- Completá siempre `routing_reason` aunque dejes `preferred_backend=auto`.
