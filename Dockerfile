@@ -9,7 +9,7 @@
 # =============================================================
 
 # ----------- Etapa 1: builder -----------
-FROM python:3.14-slim AS builder
+FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -34,7 +34,7 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 
 # ----------- Etapa 2: runtime -----------
-FROM python:3.14-slim AS runtime
+FROM python:3.12-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -71,9 +71,9 @@ USER guion
 
 EXPOSE 5001
 
-# Healthcheck contra /api/health del servidor Flask
+# Healthcheck — usa $PORT si Railway lo inyecta, cae a 5001 si no.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -fsS http://localhost:5001/api/health || exit 1
+    CMD curl -fsS http://localhost:${PORT:-5001}/api/health || exit 1
 
 # tini como init para manejar señales correctamente
 ENTRYPOINT ["/usr/bin/tini", "--"]

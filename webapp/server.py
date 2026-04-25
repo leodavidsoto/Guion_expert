@@ -768,12 +768,13 @@ if __name__ == '__main__':
     print("=" * 60)
     print("🎬 GUION EXPERTS SUITE V2")
     print("=" * 60)
-    print(f"🌐 URL: http://localhost:5001")
+    port = int(os.environ.get('PORT', 5001))
+    print(f"🌐 URL: http://localhost:{port}")
     print(f"📁 Base: {BASE_DIR}")
     print(f"📂 Output: {OUTPUT_DIR}")
     print()
     print("⏱️  Timeout: 1 hora por generación")
     print("Presiona Ctrl+C para detener")
     print("=" * 60)
-    
-    socketio.run(app, host='0.0.0.0', port=5001, debug=False, allow_unsafe_werkzeug=True)
+
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
