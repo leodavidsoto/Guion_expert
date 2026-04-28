@@ -486,6 +486,98 @@ class VeoPrompt(BaseModel):
 
 
 # ============================================================
+# EditTransition — transiciones entre clips (edit_decisions manifest)
+# Referencia: docs/I2V_STATE_OF_ART.md §11 + RUDIMENTOS_MONTAJE.md
+# ============================================================
+
+class EditTransition(BaseModel):
+    """Transición entre dos clips consecutivos en el edit_decisions manifest.
+
+    El bridge (openmontage_export.py) consume este schema para serializar
+    las decisiones de montaje hacia OpenMontage.
+    """
+
+    transition_type: Literal[
+        "smash_cut",
+        "whip_pan",
+        "invisible_cut",
+        "cross_dissolve",
+        "additive_dissolve",
+        "film_dissolve",
+        "dip_to_black",
+        "dip_to_white",
+        "dip_to_color",
+        "iris_open",
+        "iris_close",
+        "wipe_horizontal",
+        "wipe_vertical",
+        "wipe_diagonal",
+        "morph_match",
+        "freeze_frame",
+        "speed_ramp",
+        "reverse_cut",
+        "match_cut_graphic",
+        "match_cut_eyeline",
+        "match_cut_action",
+        "match_cut_audio_j",   # J-cut: audio de B empieza antes que video de B
+        "match_cut_audio_l",   # L-cut: audio de A continúa sobre video de B
+    ] = "smash_cut"
+
+    duration_s: float = Field(
+        default=0.08,
+        ge=0.0,
+        le=2.0,
+        description="Duración de la transición en segundos. 0.08 = smash cut casi instantáneo.",
+    )
+    beat_aligned: bool = Field(
+        default=False,
+        description="Si True, el corte debe caer en un beat de la banda sonora (±50ms).",
+    )
+    beat_time_s: Optional[float] = Field(
+        default=None,
+        description="Timestamp exacto del beat al que debe alinearse (de librosa beat_track).",
+    )
+
+    # ── MatchDiffusion (solo para morph_match) ──────────────────────────────
+    match_diffusion_source_prompt: Optional[str] = Field(
+        default=None,
+        description="Prompt textual del clip A para MatchDiffusion (ICCV 2025).",
+    )
+    match_diffusion_target_prompt: Optional[str] = Field(
+        default=None,
+        description="Prompt textual del clip B para MatchDiffusion.",
+    )
+    match_diffusion_joint_steps: int = Field(default=15, ge=1, le=50)
+    match_diffusion_disjoint_steps: int = Field(default=10, ge=1, le=50)
+    similarity_score: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Score de similitud composicional entre clips A y B. >= 0.78 activa MatchDiffusion.",
+    )
+
+    # ── Speed Ramp (solo para speed_ramp) ───────────────────────────────────
+    speed_curve_bezier: Optional[tuple[float, float, float, float]] = Field(
+        default=(0.42, 0.0, 0.58, 1.0),
+        description="cubic-bezier(P1x, P1y, P2x, P2y) para la curva de velocidad.",
+    )
+    speed_keyframes: Optional[list[dict]] = Field(
+        default=None,
+        description="Lista de {frame, rate} para speed ramping con keyframes arbitrarios.",
+    )
+
+    # ── Audio offset (para J-cut y L-cut) ───────────────────────────────────
+    audio_lead_ms: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        description="Milisegundos que el audio de la escena siguiente arranca antes del video (J-cut).",
+    )
+
+    class Config:
+        use_enum_values = True
+
+
+# ============================================================
 # Smoke test
 # ============================================================
 

@@ -1,29 +1,32 @@
 # =============================================================
 # Guion_expert — Config per-expert del LLM
 # =============================================================
-# Cada uno de los 7 experts del pipeline puede tener temperature
-# y max_tokens distintos según la naturaleza de su output.
+# Pipeline v2 con mejoras M1-M8. Ahora tiene 9 experts:
+# 7 originales + bible_writer (M1) + continuity_qa (M3).
 #
-# Si un expert no está en esta lista, o si le falta algún campo,
-# se usan los defaults globales de .env:
-#   - CLAUDE_MAX_TOKENS    (default 4096)
-#   - CLAUDE_TEMPERATURE   (default 0.7)
+# Heurísticas de temperatura:
+#   - 0.9   : creatividad libre (concepto, bible_writer)
+#   - 0.7   : balanceado (arquitecto, escaletista)
+#   - 0.85  : expresividad dramática (dialoguista)
+#   - 0.2   : determinista (clasificador)
+#   - 0.3-0.4: técnico estructurado (director_flow, localizador, continuity_qa)
 #
-# Heurísticas:
-#   - temperature alta (0.8–0.9): creatividad libre (concepto, diálogos)
-#   - temperature media (0.6–0.7): balanceado (arquitecto, escaletista)
-#   - temperature baja (0.2–0.4): output determinista y estructurado
-#     (clasificador, prompts técnicos)
-#   - max_tokens grande: outputs largos (escenas con diálogo, estructura)
-#   - max_tokens chico: outputs cortos (prompts SD/VEO, clasificación)
+# M8 — Prompt Caching: los experts con system prompts largos y reutilizados
+# por escena (dialoguista, director_flow) son los mejores candidatos para
+# cache_system_prompt=True en el call site.
 # =============================================================
 
 experts:
 
   clasificador:
-    description: "Clasifica formato (corto/medio/largo/serie) y estructura narrativa. Output corto y determinista."
+    description: "Clasifica formato y estructura narrativa. Emite confidence_score calibrado (M6)."
     temperature: 0.2
     max_tokens: 1024
+
+  bible_writer:
+    description: "M1 — Genera el Story Bible global (personajes, ADN visual, ADN sonoro) via tool use."
+    temperature: 0.85
+    max_tokens: 4096
 
   concepto:
     description: "Genera concepto, logline y tema central. Alta creatividad."
@@ -31,26 +34,31 @@ experts:
     max_tokens: 2048
 
   arquitecto:
-    description: "Construye la estructura (3 actos / viaje del héroe / Kishōtenketsu / etc.)."
+    description: "Construye la estructura con los 15 beats de Save the Cat parametrizados."
     temperature: 0.7
     max_tokens: 4096
 
   escaletista:
-    description: "Expande la estructura en una lista de escenas (beat sheet)."
+    description: "Expande la estructura en una lista de escenas filmables."
     temperature: 0.7
     max_tokens: 4096
 
   dialoguista:
-    description: "Escribe cada escena con acción y diálogo. Una instancia por escena."
+    description: "Escribe cada escena con diálogo, SBS persona-check y bloque sonoro. Cache-friendly."
     temperature: 0.85
     max_tokens: 4096
 
   localizador:
-    description: "Genera prompts visuales técnicos (imagen fija) con foco en consistencia cinematográfica."
+    description: "Genera prompts FLUX técnicos basados en el ADN visual del Story Bible (M4 simplificado)."
     temperature: 0.4
     max_tokens: 512
 
   director_flow:
-    description: "Genera payloads estructurados para VEO/Flow con control estricto de cámara, movimiento y sonido."
+    description: "Genera Master Stack JSON via tool use. Two-pass: genera + verifica contra Story Bible (M5)."
     temperature: 0.3
+    max_tokens: 2048
+
+  continuity_qa:
+    description: "M3 — Auditor adversario. Detecta discontinuidades, disonancias y drift visual/sonoro."
+    temperature: 0.2
     max_tokens: 2048

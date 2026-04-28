@@ -23,7 +23,7 @@ log = get_logger(__name__)
 log.info("app_starting", model=llm_provider.CLAUDE_MODEL, provider=llm_provider.PROVIDER)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'guion-experts-secret'
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'guion-experts-dev-secret')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
 app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
@@ -31,9 +31,19 @@ app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
 # Inyecta trace_id por request + log start/end automático
 init_flask_logging(app)
 
+
+def _cors_origins():
+    raw = os.environ.get(
+        'CORS_ORIGINS',
+        'http://localhost:5001,http://127.0.0.1:5001',
+    )
+    origins = [origin.strip() for origin in raw.split(',') if origin.strip()]
+    return "*" if origins == ["*"] else origins
+
+
 socketio = SocketIO(
     app, 
-    cors_allowed_origins="*",
+    cors_allowed_origins=_cors_origins(),
     ping_timeout=180,
     ping_interval=30,
     async_mode='threading'

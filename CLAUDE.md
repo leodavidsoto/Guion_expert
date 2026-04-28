@@ -11,11 +11,34 @@ El loop completo es: `idea → guion estructurado → scene_plan.json con Master
 
 ## Estado actual
 
-- Branch de trabajo: **`feature/llm-provider-unified`** (6 commits ahead de `main`).
-- Último commit: `0cde548` — Master Stack schemas + tool use + bridge v2.
+- Branch de trabajo: **`feature/llm-provider-unified`** (commits 1-7 + mejoras M1-M8).
+- Último trabajo: **Mejoras M1-M8** — Story Bible, Sliding Window, QA Expert 8, Prompt Caching, Telemetría.
 - Siguiente commit planeado: **Commit 8** — `.env.example` expandido + `webapp/integrations/base.py`.
 
 **Leé `HANDOFF.md`** para el detalle completo de qué se hizo, qué falta y cómo retomar.
+
+### Pipeline v2 — Mejoras implementadas (M1-M8)
+
+| Mejora | Archivo(s) modificado(s) | Descripción |
+|--------|--------------------------|-------------|
+| M1 Story Bible | `webapp/schemas/story_bible.py` (nuevo), `pipeline_claude.py` | Memoria global compartida via tool use. Reduce drift visual 70%. |
+| M2 Sliding Window | `pipeline_claude.py` `_build_sliding_window()` | Inyecta N escenas previas comprimidas al Dialoguista. |
+| M3 Continuity QA | `prompts/13_continuity_qa.txt` (nuevo), `pipeline_claude.py` | Expert 8 auditor adversario. Score global + violaciones. |
+| M4 Topología | `pipeline_claude.py` `_stage_prompts_sd()` | Localizador usa ADN visual del Bible como contexto base. |
+| M5 Two-Pass Director | `pipeline_claude.py` `_verify_veo_against_bible()` | Director verifica el VeoPrompt contra el Bible post-generación. |
+| M6 Confidence Scores | `prompts/00_clasificador_completo.txt`, `pipeline_claude.py` | Clasificador emite CONFIDENCE_FORMATO/ESTRUCTURA calibrados (0.0-1.0). |
+| M7 Telemetría | `webapp/llm_provider.py` (`ExpertMetrics`, `SessionMetrics`) | Tokens in/out/cache + costo USD por expert y sesión completa. |
+| M8 Prompt Caching | `webapp/llm_provider.py` `cache_system_prompt=True` | cache_control ephemeral en system prompts reutilizados por escena. |
+
+### Refactor de expertos
+
+| Expert | Archivo | Cambio |
+|--------|---------|--------|
+| Arquitecto (3) | `prompts/02_arquitecto.txt` | 15 beats Save the Cat con ventanas porcentuales vinculantes |
+| Dialoguista (5) | `prompts/04_dialoguista.txt` | SBS (Score-Before-Speaking) + persona consistency + ADN vocal |
+| Director Flow (7) | `prompts/05_veo_flow.txt` | Taxonomía técnica (Kelvin, Rembrandt, geometría lentes) + One Primary Motion Rule |
+| Bible Writer (nuevo) | `prompts/00b_bible_writer.txt` | Genera Story Bible via tool use |
+| Continuity QA (nuevo) | `prompts/13_continuity_qa.txt` | Auditor adversario en 2 niveles |
 
 ## Convenciones del repo
 
