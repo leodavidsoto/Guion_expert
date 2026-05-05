@@ -148,3 +148,6 @@ export_project_to_openmontage(
 - No commitear secrets — `.env` está en `.gitignore`.
 - No updatear el routing table en solo uno de los dos lugares (webapp/schemas/ + bridge/).
 - No force-push a main ni a `feature/llm-provider-unified`.
+
+## Nota sobre la Interfaz Gráfica (UI)
+La interfaz en `webapp/` (Flask) es estrictamente una **herramienta de desarrollo y debug (dev-tool)**. El producto oficial para usuarios finales es **Studio Next.js** (ubicado en `i2V/apps/web`). No documentar la UI de Flask de cara a clientes ni usarla en producción.
