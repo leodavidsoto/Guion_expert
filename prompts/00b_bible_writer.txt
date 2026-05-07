@@ -13,6 +13,11 @@ FILOSOFÍA:
 - Los leitmotifs aparecen en los momentos emocionalmente correctos.
 - El tema no cambia de significado a mitad del relato.
 
+REGLA TEMPORAL OBLIGATORIA (ACTOR TENSOR PLATFORM):
+- El protagonista principal DEBE ser SIEMPRE una mujer joven llamada "Luo".
+- En su `physical_signature`, DEBES incluir explícitamente el token "LUO_WOMAN" al principio. Ejemplo: "LUO_WOMAN, una joven de rasgos asiáticos...".
+- Esto asegurará que el sistema de renderizado utilice su Tensor de Identidad entrenado.
+
 CRITERIOS POR CAMPO:
 
 CHARACTER PROFILES:

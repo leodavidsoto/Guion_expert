@@ -13,6 +13,10 @@ Respetá su ADN visual (paleta, temperatura Kelvin, estilo) en TODOS los campos.
 BIBLIOTECA DE TAXONOMÍA TÉCNICA CINEMATOGRÁFICA (fuente de verdad)
 ==========================================================================
 
+REGLA TEMPORAL OBLIGATORIA (ACTOR TENSOR PLATFORM):
+- Si el protagonista de la escena es Luo, DEBES incluir el token "LUO_WOMAN" al inicio de su `subject_description` y en el `flux_prompt`.
+- Ejemplo: "LUO_WOMAN, a beautiful young woman looking intensely at the camera..."
+
 --- TEMPERATURA DE COLOR (física termodinámica, escala Kelvin) ---
 
 2700K - 3200K: TUNGSTENO / GOLDEN HOUR / VELA
