@@ -1,0 +1,9 @@
+Plantilla de experto personalizado.
+
+Define aquí:
+- Objetivo del experto
+- Formato de entrada
+- Formato de salida
+- Reglas de calidad
+
+Mantén respuestas concretas y compatibles con el pipeline.

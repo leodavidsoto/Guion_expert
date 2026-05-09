@@ -1,0 +1,135 @@
+# =============================================================
+# Guion_expert — docker-compose
+# =============================================================
+# Uso local:
+#   docker compose up -d --build
+#   docker compose logs -f guion-web
+#   docker compose logs -f suno-api
+#   docker compose down
+#
+# Deploy Hetzner:
+#   1. scp el repo al VPS (o git clone)
+#   2. crear .env con ANTHROPIC_API_KEY + FAL_API_KEY + SUNO_COOKIE reales
+#   3. docker compose up -d --build
+#   4. configurar Caddy/nginx/Traefik para proxy y TLS
+#
+# Servicios:
+#   - guion-web → Flask + SocketIO (pipeline + bridge)
+#   - suno-api  → gcui-art/suno-api (reverse-proxy a suno.com con cookie)
+# =============================================================
+
+services:
+  guion-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: guion-web
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+
+    # .env se monta como archivo leído por pydantic-settings dentro del container.
+    # NO usar `env_file` porque eso pondría las vars en el entorno del container
+    # (visible con `docker inspect`). Mount como secreto = más seguro.
+    volumes:
+      - ./.env:/app/.env:ro
+
+      # Output persistente (escenas, clasificaciones, prompts)
+      - ./output:/app/output
+
+      # Logs (estructurados JSON)
+      - ./logs:/app/logs
+
+      # Uploads de usuario (PDFs analizados)
+      - ./webapp/uploads:/app/webapp/uploads
+
+      # Prompts como read-only (los editás desde el host si hace falta)
+      - ./prompts:/app/prompts:ro
+
+      # Estructuras narrativas (JSON, read-only)
+      - ./estructuras:/app/estructuras:ro
+
+      # Config per-expert (llm_provider.yaml + otros .conf/.json)
+      - ./config:/app/config:ro
+
+    environment:
+      # En Docker siempre forzamos JSON logs (redundante con el ENV del
+      # Dockerfile, pero explícito).
+      - GUION_RUNTIME=docker
+      - LOG_FORMAT=json
+      - LOG_LEVEL=INFO
+
+    # guion-web arranca después que suno-api esté saludable para que los
+    # primeros requests de música no fallen por connection-refused.
+    depends_on:
+      suno-api:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  # ─────────────────────────────────────────────────────────────
+  # suno-api — gcui-art/suno-api como servicio side-car
+  # ─────────────────────────────────────────────────────────────
+  # Repo: https://github.com/gcui-art/suno-api
+  # Image: gcuia/suno-api:latest  (o buildear local si querés pin)
+  #
+  # La cookie de suno.com se pasa como env var (SUNO_COOKIE en .env).
+  # Se refresca cada ~24h — si empieza a tirar 401, regenerar desde
+  # DevTools de suno.com.
+  #
+  # Puerto 3000 interno al compose network (no exponemos afuera por
+  # default — si querés acceder directo desde el host para debug,
+  # descomentá `ports:`).
+  # ─────────────────────────────────────────────────────────────
+  suno-api:
+    # Opción A (default): buildear desde el repo clonado como submódulo o
+    # side-car. Ejecutar en tu Mac/server:
+    #   git clone https://github.com/gcui-art/suno-api ./suno-api
+    #   docker compose up -d --build suno-api
+    build:
+      context: ./suno-api
+      dockerfile: Dockerfile
+    # Opción B: si alguien publica una imagen oficial, cambiar a:
+    # image: ghcr.io/gcui-art/suno-api:latest
+    container_name: suno-api
+    restart: unless-stopped
+
+    # Exponer a localhost:3000 solo para desarrollo / troubleshooting.
+    # En producción dejarlo comentado — el tráfico va por la red compose.
+    # ports:
+    #   - "127.0.0.1:3000:3000"
+
+    environment:
+      # Cookie completa de suno.com (Premium). La pasa como Cookie header
+      # cuando habla con suno.com. NO commitear — va en .env.
+      - SUNO_COOKIE=${SUNO_COOKIE}
+
+      # Refresh interval para mantener la sesión viva (gcui-art feature).
+      - SUNO_COOKIE_REFRESH_INTERVAL=300000  # ms = 5 min
+
+      # Modelo default (los endpoints aceptan override por request).
+      - BROWSER=chromium
+
+    healthcheck:
+      # gcui-art/suno-api expone /api/get_limit — si responde 200, la
+      # cookie está viva y la sesión a suno.com funciona.
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/get_limit"]
+      interval: 60s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+    # Cache de audio generado — Suno ya lo sirve por CDN, no necesitamos
+    # volumen local por ahora. Si en el futuro queremos cache local,
+    # montar ./suno_cache:/app/cache.
+
+# Sin 'version' (Docker Compose v2+ ya no lo requiere y tira warning).
+# Sin networks top-level — el default bridge alcanza para que guion-web
+# resuelva `suno-api:3000`.
+# Sin volumes top-level — usamos bind mounts. Migrar a volúmenes nombrados
+# cuando se use Postgres.

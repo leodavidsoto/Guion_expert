@@ -1,88 +1,58 @@
-Genera un script completo para Instagram Reel (vertical 9:16, 15-90 segundos) BASADO STRICTAMENTE EN LA IDEA DEL USUARIO.
-NO INVENTES UNA HISTORIA DIFERENTE. USA LA IDEA PROPORCIONADA.
+Genera un guion de Instagram Reel (9:16) basado estrictamente en la idea del usuario.
+No inventes una historia diferente.
 
-**ESTRUCTURA INSTAGRAM REEL:**
+ENFOQUE REEL:
+- Visual-first.
+- Identidad estética consistente.
+- Ritmo con cortes cada 1-3s según contenido.
+- CTA sutil (guardar/compartir/comentar).
 
-**[0-1 SEG] PATTERN INTERRUPT:**
-- Disrupción visual inmediata
-- Movimiento súbito, cambio de escena, texto grande
-- DEBE detener el scroll
+ESTRUCTURA SUGERIDA:
+1) Pattern interrupt (0-1s)
+2) Hook visual (1-4s)
+3) Desarrollo por beats
+4) Cierre con loop o remate
 
-**[1-10 SEG] HOOK VISUAL:**
-- Estética impecable (Instagram es visual-first)
-- Color grading consistente
-- Transiciones trendy
+REGLAS:
+- Pensar diseño para UI móvil (evitar texto en bordes críticos).
+- Si usas texto, corto y legible.
+- Evitar sobrecargar con efectos sin función narrativa.
+- Debe poder verse sin audio (subtítulos/captions de apoyo).
 
-**[10-60 SEG] CONTENIDO CORE:**
-- Story telling en capas visuales
-- Música trending (OBLIGATORIO)
-- Efectos de IG (filtros, AR, stickers)
-
-**[60-90 SEG] LOOP/CTA:**
-- Puede hacer loop para re-vistas
-- Sutil CTA (Instagram penaliza CTAs agresivos)
-- "Guarda esto", "Comparte con..."
-
----
-
-**FORMATO OUTPUT:**
-```
+FORMATO DE SALIDA:
 === INSTAGRAM REEL ===
 
-CONCEPTO: [Una frase que resuma]
-DURACIÓN: [15-90 seg]
-ESTILO: [Aesthetic/mood]
+CONCEPTO:
+DURACION_OBJETIVO:
+ESTILO_VISUAL:
 
----
+AUDIO:
+- Tipo:
+- BPM aproximado:
+- Mood:
 
-AUDIO TRENDING:
-- Nombre de la canción viral o audio original
-- BPM: [ritmo]
-- Mood: [energético/chill/emotional]
+BEATS:
+BEAT 1 (0-1s)
+- VISUAL:
+- TEXTO:
+- TRANSICION:
 
----
+BEAT 2
+- VISUAL:
+- TEXTO:
+- TRANSICION:
 
-STORYBOARD POR BEATS:
+BEATS SIGUIENTES...
 
-BEAT 1 (0-1s): PATTERN INTERRUPT
-- VISUAL: [Frame inicial impactante]
-- TRANSICIÓN: [Tipo]
-- TEXTO: [Grande, bold]
+BEAT FINAL
+- VISUAL:
+- LOOP: <SI/NO>
+- CTA_SUTIL:
 
-BEAT 2 (1-3s): 
-- VISUAL: [Cambio de ángulo]
-- MÚSICA: [Drop o cambio]
-- FILTRO: [Efecto de IG específico]
-
-[... continuar por beats de 2-3 segundos]
-
-BEAT FINAL:
-- VISUAL: [Cierre memorable]
-- LOOP: [¿Conecta con el inicio? SÍ/NO]
-- CTA: [Sutil, en caption mejor que en video]
-
----
-
-POST-PRODUCCIÓN:
-- Color Grading: [LUT o preset]
-- Velocidad: [Normal/Slow-mo/Fast forward en qué momentos]
-- Efectos: [Glitch, VHS, etc]
-- Texto: [Font, color, animación]
+POSTPRODUCCION:
+- Color grading:
+- Tipografia sugerida:
+- Ritmo de edición:
 
 CAPTION:
-[Primera línea pegajosa que completa el video]
-[2-3 líneas máx]
-[Hashtags estratégicos, max 10]
-
-ESTRATEGIA DE ENGAGEMENT:
-- Mejor hora para postear: [Basado en nicho]
-- Tag a: [@cuentas relevantes]
-- Posible colaboración: [Sí/No]
-```
-
-**DIFERENCIAS CLAVE VS YOUTUBE SHORT:**
-- MÁS estético, menos informativo
-- Audio trending es CRÍTICO
-- Transiciones más sofisticadas
-- CTA en caption, no en video
-- Loop es ventaja competitiva
+HASHTAGS:

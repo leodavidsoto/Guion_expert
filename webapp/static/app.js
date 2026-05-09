@@ -1,5 +1,9 @@
 // Configuración
-const socket = io();
+const hasSocketIO = typeof window.io === 'function';
+const socket = hasSocketIO ? window.io() : {
+    on: () => {},
+    emit: () => {}
+};
 let currentView = 'generate';
 let currentStructure = null;
 let currentExpert = null;
@@ -22,7 +26,9 @@ function initNavigation() {
     document.querySelectorAll('.nav-icon').forEach(icon => {
         icon.addEventListener('click', () => {
             const view = icon.dataset.view;
-            switchView(view);
+            if (view) {
+                switchView(view);
+            }
         });
     });
 }
@@ -64,53 +70,88 @@ function initAutoDetect() {
     const autoDetect = document.getElementById('autoDetect');
     const manualControls = document.getElementById('manualControls');
 
-    autoDetect.addEventListener('change', () => {
-        if (autoDetect.checked) {
-            manualControls.classList.add('hidden');
-        } else {
-            manualControls.classList.remove('hidden');
-        }
-    });
+    if (!autoDetect || !manualControls) return;
+
+    const syncManualControls = () => {
+        manualControls.classList.toggle('hidden', autoDetect.checked);
+    };
+
+    autoDetect.addEventListener('change', syncManualControls);
+    syncManualControls();
+    autoDetect.dataset.bound = '1';
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // GENERAR PROYECTO COMPLETO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function initGenerateButton() {
-    document.getElementById('generateBtn').addEventListener('click', generateProject);
+    const generateBtn = document.getElementById('generateBtn');
+    if (!generateBtn) return;
+    if (generateBtn.dataset.bound === '1') return;
+    generateBtn.addEventListener('click', generateProject);
+    generateBtn.dataset.bound = '1';
 }
 
 async function generateProject() {
-    const idea = document.getElementById('ideaInput').value.trim();
+    const ideaInput = document.getElementById('ideaInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const logConsole = document.getElementById('logConsole');
+    const autoDetectInput = document.getElementById('autoDetect');
+    const formatoSelect = document.getElementById('formatoSelect');
+    const estructuraSelect = document.getElementById('estructuraSelect');
+
+    if (!ideaInput || !generateBtn || !logConsole || !autoDetectInput || !formatoSelect || !estructuraSelect) {
+        alert('Falta configuración de interfaz. Recarga la página.');
+        return;
+    }
+
+    const idea = ideaInput.value.trim();
 
     if (!idea) {
         alert('Por favor ingresa una idea');
         return;
     }
 
-    const autoDetect = document.getElementById('autoDetect').checked;
-    const formato = document.getElementById('formatoSelect').value;
-    const estructura = document.getElementById('estructuraSelect').value;
+    const autoDetect = autoDetectInput.checked;
+    const formato = formatoSelect.value;
+    const estructura = estructuraSelect.value;
 
     // Limpiar consola
-    document.getElementById('logConsole').innerHTML = '';
+    logConsole.innerHTML = '';
 
-    // Enviar petición
-    const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            idea: idea,
-            auto_detect: autoDetect,
-            formato: formato || null,
-            estructura: estructura || null
-        })
-    });
+    generateBtn.disabled = true;
+    generateBtn.textContent = '⏳ Iniciando...';
+    addLog('info', '⏳ Enviando solicitud de generación...');
 
-    const data = await response.json();
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                idea: idea,
+                auto_detect: autoDetect,
+                formato: formato || null,
+                estructura: estructura || null
+            })
+        });
 
-    if (data.status === 'started') {
-        addLog('info', '🚀 Generación iniciada...');
+        const data = await response.json();
+
+        if (!response.ok) {
+            addLog('error', `❌ Error ${response.status}: ${data.error || 'No se pudo iniciar la generación'}`);
+            return;
+        }
+
+        if (data.status === 'started') {
+            addLog('success', '🚀 Generación iniciada...');
+        } else {
+            addLog('error', `❌ Respuesta inesperada: ${JSON.stringify(data)}`);
+        }
+    } catch (error) {
+        addLog('error', `❌ Fallo de conexión al generar: ${error.message}`);
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '🚀 Generar Proyecto';
     }
 }
 
@@ -418,6 +459,16 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // WEBSOCKETS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function initSocketListeners() {
+    if (!hasSocketIO) {
+        console.warn('Socket.IO no cargado. UI en modo sin tiempo real.');
+        const statusBadge = document.getElementById('statusBadge');
+        if (statusBadge) {
+            statusBadge.textContent = '● Sin Socket';
+            statusBadge.style.background = 'var(--error)';
+        }
+        return;
+    }
+
     socket.on('connect', () => {
         console.log('Conectado al servidor');
         document.getElementById('statusBadge').textContent = '● Conectado';
@@ -497,8 +548,16 @@ function initSocketListeners() {
         if (data.returncode === 0) {
             addLog('success', '✅ Generación completada exitosamente');
             loadProjects(); // Recargar lista de proyectos
+
+            // Si el export a OpenMontage se realizó, mostrar botones de acción
+            if (data.openmontage && data.openmontage.project_root) {
+                renderOpenMontageActions(data.openmontage);
+            } else if (data.project) {
+                // Sin OpenMontage auto-export: ofrecer export manual
+                renderOpenMontageExportButton(data.project);
+            }
         } else {
-            addLog('error', '❌ Error en la generación');
+            addLog('error', `❌ Error en la generación: ${data.error || 'desconocido'}`);
         }
     });
 
@@ -546,6 +605,10 @@ function addWorkspaceLog(type, message) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function getCategoryIcon(category) {
     const icons = {
+        'classic_hollywood': '🎬',
+        'mythic_journey': '🗿',
+        'episodic_tv': '📺',
+        'non_linear': '🔀',
         'hollywood': '🎬',
         'mythic': '🗿',
         'tv': '📺',
@@ -561,6 +624,10 @@ function getCategoryIcon(category) {
 
 function getCategoryName(category) {
     const names = {
+        'classic_hollywood': 'Hollywood Clásico',
+        'mythic_journey': 'Viaje Mítico',
+        'episodic_tv': 'TV y Series',
+        'non_linear': 'No Lineal',
         'hollywood': 'Hollywood Clásico',
         'mythic': 'Viaje Mítico',
         'tv': 'TV y Series',
@@ -916,4 +983,88 @@ function downloadFlowJson() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+// --- OpenMontage bridge UI ------------------------------------------------
+
+function renderOpenMontageActions(om) {
+    const consoleEl = document.getElementById('logConsole');
+    if (!consoleEl) return;
+
+    const box = document.createElement('div');
+    box.className = 'log-line log-success';
+    box.style.cssText = 'margin-top:12px; padding:12px; border:1px solid #22D3EE; border-radius:8px; background:rgba(34,211,238,0.06);';
+    box.innerHTML = `
+        <div style="font-weight:600; margin-bottom:6px;">🎬 OpenMontage — listo</div>
+        <div style="font-size:12px; opacity:0.85; margin-bottom:8px;">
+            Proyecto: <code>${om.project_root.split('/').pop()}</code><br>
+            Brief + Script + Scene Plan generados (schemas oficiales)
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="copyToClipboard('${(om.cuts || '').replace(/'/g, "\\'")}')">
+                📋 Copiar ruta cuts.json
+            </button>
+            <button class="btn btn-secondary" onclick="openOpenMontageInstructions('${om.project_root.replace(/'/g, "\\'")}')">
+                📖 Cómo renderizar
+            </button>
+        </div>
+    `;
+    consoleEl.appendChild(box);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function renderOpenMontageExportButton(projectId) {
+    const consoleEl = document.getElementById('logConsole');
+    if (!consoleEl || !projectId) return;
+    const box = document.createElement('div');
+    box.className = 'log-line log-info';
+    box.style.cssText = 'margin-top:8px;';
+    box.innerHTML = `
+        <button class="btn btn-secondary" onclick="manualExportOpenMontage('${projectId}')">
+            🎬 Exportar a OpenMontage
+        </button>
+    `;
+    consoleEl.appendChild(box);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+async function manualExportOpenMontage(projectId) {
+    addLog('info', `🎬 Exportando ${projectId} a OpenMontage…`);
+    try {
+        const response = await fetch(`/api/openmontage/export/${projectId}`, { method: 'POST' });
+        const data = await response.json();
+        if (data.status === 'ok') {
+            addLog('success', `✅ Exportado: ${data.project_root.split('/').pop()}`);
+            renderOpenMontageActions({
+                project_root: data.project_root,
+                cuts: data.artifacts && data.artifacts.cuts,
+            });
+        } else {
+            addLog('error', `❌ ${data.error || 'export falló'}`);
+        }
+    } catch (e) {
+        addLog('error', `❌ ${e.message}`);
+    }
+}
+
+function copyToClipboard(text) {
+    if (!text) return;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        addLog('success', `📋 Copiado: ${text}`);
+    } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        addLog('success', `📋 Copiado`);
+    }
+}
+
+function openOpenMontageInstructions(projectRoot) {
+    const cmd = `cd "${projectRoot.replace('/projects/', '/').replace(/\/[^/]+$/, '')}" && python render_demo.py --props "${projectRoot}/remotion-cuts.json"`;
+    const msg = `Para renderizar con Remotion (zero-key):\n\n${cmd}\n\nO abrí OpenMontage en Claude Code / Cursor y pedile continuar el pipeline desde el 'stages/' del proyecto.`;
+    alert(msg);
 }

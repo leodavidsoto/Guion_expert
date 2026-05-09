@@ -2,21 +2,21 @@
   "vertical_social": {
     "YOUTUBE_SHORT": {
       "name": "YouTube Short",
-      "duration": "15-60s",
+      "duration": "15-180s",
       "aspect": "9:16",
       "platform": "YouTube",
       "description": "Videos verticales optimizados para YouTube Shorts"
     },
     "REEL_INSTAGRAM": {
       "name": "Instagram Reel",
-      "duration": "15-90s",
+      "duration": "15-180s",
       "aspect": "9:16",
       "platform": "Instagram",
       "description": "Reels con música, efectos y transiciones"
     },
     "TIKTOK": {
       "name": "TikTok",
-      "duration": "15-180s",
+      "duration": "15-600s (in-app) / hasta 60 min (upload)",
       "aspect": "9:16",
       "platform": "TikTok",
       "description": "Contenido viral vertical para TikTok"
